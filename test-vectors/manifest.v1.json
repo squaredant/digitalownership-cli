@@ -1,0 +1,68 @@
+{
+  "schema": "digitalownership-test-vectors-v1",
+  "documentFingerprintAlgorithm": "SHA-512",
+  "fingerprintVectors": [
+    {
+      "id": "odt-content-v1-basic",
+      "file": "fixtures/office-content-v1.odt",
+      "hashScope": "digitalownership-content-v1",
+      "documentFingerprint": "e5ad1d54f9f936288c7e3bd14919ce9b37a11118594df12dc96925d4d1a5fe18c735e38e210d21765a8ad101475fffb33f56e004d804bc89d193e1769daa2dc0"
+    },
+    {
+      "id": "docx-content-v1-basic",
+      "file": "fixtures/office-content-v1.docx",
+      "hashScope": "digitalownership-content-v1",
+      "documentFingerprint": "b346bd5a16024300dd75735406072727b664b6eb73562ad5886ba3abaca7789d57180f5996b3d920d19d3c19a44edb5ade378f46ec25d187d2ba979bd98389bf"
+    },
+    {
+      "id": "xlsx-content-v1-basic",
+      "file": "fixtures/office-content-v1.xlsx",
+      "hashScope": "digitalownership-content-v1",
+      "documentFingerprint": "c83f88c70dc26fffa44eb762a71cd4634fcf7e513694252e4ed1433204c801e6a8921622f4fdba697acea7183e88a9e357e0c640a15ad1c889b74187cc3f8ed7"
+    },
+    {
+      "id": "pptx-content-v1-basic",
+      "file": "fixtures/office-content-v1.pptx",
+      "hashScope": "digitalownership-content-v1",
+      "documentFingerprint": "95deda2b962d75eb8beaafa8db4f6ed00dcbd6a23718470db1d817cbfe1da18fd6ebf969c9fca7746256fb9a6cde484c63f2219f1aa3451ff9bc7c5b73a13555"
+    },
+    {
+      "id": "pdf-file-v1-basic",
+      "file": "fixtures/pdf-file-v1.pdf",
+      "hashScope": "digitalownership-pdf-file-v1",
+      "documentFingerprint": "4bdfee88057123c5b1647518aaffaba4ed358eca836339b128f944d9a9ecb0e9e72ab92272f893fd86fa0d65874ca55c3e222504f852eb64f98011a2aac017b4"
+    },
+    {
+      "id": "txt-exact-file-v1-basic",
+      "file": "fixtures/exact-file-v1.txt",
+      "hashScope": "digitalownership-exact-file-v1",
+      "documentFingerprint": "97b88cd958826ce4650561aac0055f764bbedeee5d1a7522347d5bfb25c3b710cb28c5c26b6560d0ee90e193d0c984729eace57c50235612a41f603911dc5229"
+    },
+    {
+      "id": "json-exact-file-v1-basic",
+      "file": "fixtures/exact-file-v1.json",
+      "hashScope": "digitalownership-exact-file-v1",
+      "documentFingerprint": "0f129a1091cb666570e81e994f9ede1da8ce4dc61ec98cb83da4aa6434c69bb73b8d250bfd91388c4849ba4da61121e0e624e4148b76ffc16eff12278a1d8251"
+    }
+  ],
+  "registryKeyVectors": [
+    {
+      "id": "wallet-key-from-txt-exact-file-v1",
+      "registrationMethod": "wallet",
+      "sourceHash": "97b88cd958826ce4650561aac0055f764bbedeee5d1a7522347d5bfb25c3b710cb28c5c26b6560d0ee90e193d0c984729eace57c50235612a41f603911dc5229",
+      "derivation": "keccak256(UTF-8 lowercase sourceHash)",
+      "registryKey": "0x7d37ede4569a82038af74c685fcd5c4dc4c1d32b065dbf7f410055d8f4312932"
+    },
+    {
+      "id": "account-key-from-txt-exact-file-v1",
+      "registrationMethod": "email_anchored_account",
+      "sourceHash": "97b88cd958826ce4650561aac0055f764bbedeee5d1a7522347d5bfb25c3b710cb28c5c26b6560d0ee90e193d0c984729eace57c50235612a41f603911dc5229",
+      "email": "vector.owner@example.test",
+      "normalizedEmail": "vector.owner@example.test",
+      "emailClaimDerivation": "keccak256(UTF-8 'digitalownership-email-v1:email:' + normalizedEmail)",
+      "emailClaimHash": "0x352a693fcd81dab75222472980e39ddb95d66e9f0e6e9eba896a0870361191bb",
+      "derivation": "keccak256(UTF-8 'digitalownership-email-v1:registration:' + sourceHash + ':' + emailClaimHash)",
+      "registryKey": "0x59fef92d70f2f5b84efedfd2419411339d0cca74435ee2fec8a925f2145db391"
+    }
+  ]
+}

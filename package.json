@@ -1,0 +1,27 @@
+{
+  "name": "@squaredant/digitalownership-cli",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local fingerprinting and public verification for DigitalOwnership",
+  "type": "module",
+  "bin": {
+    "digitalownership": "./bin/digitalownership.js"
+  },
+  "files": [
+    "bin",
+    "lib",
+    "test-vectors",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node --test",
+    "test:vectors": "python3 test-vectors/scripts/verify-vectors.py"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "ethers": "^6.13.0",
+    "fflate": "^0.8.3"
+  }
+}

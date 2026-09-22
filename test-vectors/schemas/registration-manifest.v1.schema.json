@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/squaredant/digitalownership-cli/schemas/registration-manifest.v1.schema.json",
+  "title": "DigitalOwnership registration manifest v1",
+  "description": "Local pipeline input. File bytes and email addresses are never included.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "documentFingerprintAlgorithm", "registrations"],
+  "properties": {
+    "schema": {
+      "const": "digitalownership-registration-manifest-v1"
+    },
+    "documentFingerprintAlgorithm": {
+      "const": "SHA-512"
+    },
+    "clientReference": {
+      "description": "Optional non-sensitive pipeline run reference.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$"
+    },
+    "registrations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "documentFingerprint", "hashScope"],
+        "properties": {
+          "id": {
+            "description": "Unique caller-assigned identifier within this manifest.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9._:-]+$"
+          },
+          "documentFingerprint": {
+            "description": "Lowercase hexadecimal SHA-512 fingerprint without a 0x prefix.",
+            "type": "string",
+            "pattern": "^[0-9a-f]{128}$"
+          },
+          "hashScope": {
+            "type": "string",
+            "enum": [
+              "digitalownership-content-v1",
+              "digitalownership-pdf-file-v1",
+              "digitalownership-exact-file-v1"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,1 @@
+DigitalOwnership exact-file test vector.

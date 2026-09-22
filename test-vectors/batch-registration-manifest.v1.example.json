@@ -1,0 +1,17 @@
+{
+  "schema": "digitalownership-registration-manifest-v1",
+  "documentFingerprintAlgorithm": "SHA-512",
+  "clientReference": "synthetic-report-run-001",
+  "registrations": [
+    {
+      "id": "final-report",
+      "documentFingerprint": "97b88cd958826ce4650561aac0055f764bbedeee5d1a7522347d5bfb25c3b710cb28c5c26b6560d0ee90e193d0c984729eace57c50235612a41f603911dc5229",
+      "hashScope": "digitalownership-exact-file-v1"
+    },
+    {
+      "id": "data-summary",
+      "documentFingerprint": "0f129a1091cb666570e81e994f9ede1da8ce4dc61ec98cb83da4aa6434c69bb73b8d250bfd91388c4849ba4da61121e0e624e4148b76ffc16eff12278a1d8251",
+      "hashScope": "digitalownership-exact-file-v1"
+    }
+  ]
+}
