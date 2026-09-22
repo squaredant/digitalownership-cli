@@ -9,6 +9,30 @@ create and revoke integrations; the CLI can exchange an integration credential
 for a short-lived access token. No existing LibreOffice or macOS device link
 uses these tables.
 
+## Verification Endpoint
+
+The CLI sends local fingerprints to the public verification endpoint used by
+`digitalownership verify` and `digitalownership doctor`. It sends the
+registration email only when the caller provides `--email`; it never uploads
+the file.
+
+The production default is:
+
+```text
+https://digitalownership.squaredant.com/api/verify/hash
+```
+
+Override it only for a separately deployed environment or local test service:
+
+```sh
+export DIGITALOWNERSHIP_VERIFICATION_URL='https://verification.example.org/api/verify/hash'
+digitalownership doctor
+
+# One-command override; does not change the environment.
+digitalownership verify ./report.pdf \
+  --verification-url 'https://verification.example.org/api/verify/hash'
+```
+
 ## Security Model
 
 Pipeline access is intentionally separate from a device link:

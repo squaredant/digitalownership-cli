@@ -63,34 +63,13 @@ digitalownership token
 export DIGITALOWNERSHIP_PIPELINE_TOKEN='do_at_...'
 ```
 
-### Verification Endpoint
+### Advanced Configuration
 
-`DIGITALOWNERSHIP_VERIFICATION_URL` is the public endpoint used by
-`digitalownership verify` and `digitalownership doctor`. It receives the local
-fingerprint, and the registration email only when `--email` is supplied; it
-does not receive the file.
-
-It defaults to the production endpoint, so no setting is required for normal
-use:
-
-```sh
-# Default: https://digitalownership.squaredant.com/api/verify/hash
-digitalownership verify ./DigitalOwnershipArchive/report.registered.pdf \
-  --email owner@example.com
-```
-
-Set it only to use a separately deployed environment or a local test service.
-The command-line `--verification-url` option overrides the environment
-variable for one command.
-
-```sh
-export DIGITALOWNERSHIP_VERIFICATION_URL='https://verification.example.org/api/verify/hash'
-digitalownership doctor
-
-# One-command override; does not change the environment.
-digitalownership verify ./report.pdf \
-  --verification-url 'https://verification.example.org/api/verify/hash'
-```
+Verification uses the DigitalOwnership production service by default. Set
+`DIGITALOWNERSHIP_VERIFICATION_URL` or pass `--verification-url <url>` only
+for a separate deployment or local test service. See
+[the pipeline API guide](https://github.com/squaredant/digitalownership-cli/blob/main/docs/pipeline-api.md#verification-endpoint)
+for details.
 
 The integration credential remains valid until revoked. The access token lasts
 five minutes. Each integration credential can have at most five valid access
