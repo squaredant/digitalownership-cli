@@ -13,7 +13,7 @@ Usage:
   digitalownership doctor [--verification-url <url>]
   digitalownership token [--pipeline-api-url <url>]
   digitalownership balance [--pipeline-api-url <url>]
-  digitalownership register <file> --account --approval none|required [--wait] [--dry-run] [--no-archive --receipt-out <path>]
+  digitalownership register <file> --account --email <account-email> --approval none|required [--wait] [--dry-run] [--no-archive --receipt-out <path>]
 
 Environment:
   DIGITALOWNERSHIP_VERIFICATION_URL  Public verification endpoint.
@@ -91,8 +91,8 @@ async function main() {
     return;
   }
   if (command === "register") {
-    if (positional.length !== 1 || !options.account) {
-      throw new Error("Usage: digitalownership register <file> --account --approval none|required [--wait] [--dry-run]");
+    if (positional.length !== 1 || !options.account || !options.email?.trim()) {
+      throw new Error("Usage: digitalownership register <file> --account --email <account-email> --approval none|required [--wait] [--dry-run]");
     }
     if (options["no-archive"] && !options["receipt-out"]) {
       throw new Error("--no-archive requires --receipt-out <path> so the registration receipt is retained.");
@@ -111,7 +111,7 @@ async function main() {
       }
       const registration = await waitForRegistration(approved.registrationRequestId, { url: options["pipeline-api-url"] });
       if (registration.status !== "completed") throw new Error(registration.error || "Registration failed.");
-      const archive = await writeArchiveReceipt({ sourcePath: positional[0], fingerprint: result.fingerprint, registration, noArchive: Boolean(options["no-archive"]), receiptOut: options["receipt-out"] });
+      const archive = await writeArchiveReceipt({ sourcePath: positional[0], fingerprint: result.fingerprint, registration, accountEmail: options.email.trim(), noArchive: Boolean(options["no-archive"]), receiptOut: options["receipt-out"] });
       process.stdout.write(`${JSON.stringify({ ok: true, ...result, approval: approved, registration, archive })}\n`);
       return;
     }
@@ -130,6 +130,7 @@ async function main() {
       sourcePath: positional[0],
       fingerprint: result.fingerprint,
       registration,
+      accountEmail: options.email.trim(),
       noArchive: Boolean(options["no-archive"]),
       receiptOut: options["receipt-out"],
     });

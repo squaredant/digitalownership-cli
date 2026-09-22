@@ -63,6 +63,35 @@ digitalownership token
 export DIGITALOWNERSHIP_PIPELINE_TOKEN='do_at_...'
 ```
 
+### Verification Endpoint
+
+`DIGITALOWNERSHIP_VERIFICATION_URL` is the public endpoint used by
+`digitalownership verify` and `digitalownership doctor`. It receives the local
+fingerprint, and the registration email only when `--email` is supplied; it
+does not receive the file.
+
+It defaults to the production endpoint, so no setting is required for normal
+use:
+
+```sh
+# Default: https://digitalownership.squaredant.com/api/verify/hash
+digitalownership verify ./DigitalOwnershipArchive/report.registered.pdf \
+  --email owner@example.com
+```
+
+Set it only to use a separately deployed environment or a local test service.
+The command-line `--verification-url` option overrides the environment
+variable for one command.
+
+```sh
+export DIGITALOWNERSHIP_VERIFICATION_URL='https://verification.example.org/api/verify/hash'
+digitalownership doctor
+
+# One-command override; does not change the environment.
+digitalownership verify ./report.pdf \
+  --verification-url 'https://verification.example.org/api/verify/hash'
+```
+
 The integration credential remains valid until revoked. The access token lasts
 five minutes. Each integration credential can have at most five valid access
 tokens; issuing a sixth revokes its oldest valid token. When `--wait` is used,
@@ -100,8 +129,9 @@ digitalownership verify ./report.pdf
 ```
 
 Verification hashes the file locally and checks the public verification
-service. A confirmed result contains `verified: true` and the final
-`registryKey`. Verify the registered archive copy whenever one exists.
+service at `DIGITALOWNERSHIP_VERIFICATION_URL` (or the production default). A
+confirmed result contains `verified: true` and the final `registryKey`. Verify
+the registered archive copy whenever one exists.
 
 ### Check Connectivity And Credits
 
@@ -118,18 +148,30 @@ reserves the credit when it processes a real registration.
 Use this only for an authorised automated pipeline:
 
 ```sh
-digitalownership register ./out/final-report.json --account --approval none
+digitalownership register ./out/final-report.json --account \
+  --email owner@example.com --approval none
 ```
+
+`--account` selects an account-linked registration through the
+DigitalOwnership service. It uses the five-minute pipeline access token and
+spends a credit from the account that owns that token. The server derives the
+email-linked registry key from that authenticated account; it is not a wallet
+registration flag. Wallet signing is not included in this CLI release.
 
 The command waits for completion, creates a read-only archive copy in
 `DigitalOwnershipArchive`, and writes a `digitalownership-local-record-v1`
-receipt in `DigitalOwnershipArchive/.DigitalOwnershipRecords/`. The receipt
-does not contain the account email.
+receipt in `DigitalOwnershipArchive/.DigitalOwnershipRecords/`. `--email` must
+be the email address of the account that owns the pipeline credential. The CLI
+copies it to the local receipt as `accountEmail`, so the archive can later be
+verified with the correct email. The server does not return the account email
+through the pipeline API. Treat the receipt as private metadata when the email
+is personal or otherwise confidential.
 
-For controlled external retention, require an explicit receipt path:
+To control where the receipt is written, provide an explicit receipt path:
 
 ```sh
-digitalownership register ./out/final-report.json --account --approval none \
+digitalownership register ./out/final-report.json --account \
+  --email owner@example.com --approval none \
   --no-archive --receipt-out ./evidence/final-report.digitalownership.json
 ```
 
@@ -138,17 +180,15 @@ digitalownership register ./out/final-report.json --account --approval none \
 Use this when an account owner must approve one exact fingerprint:
 
 ```sh
-# Returns a five-minute approval URL and exits.
-digitalownership register ./out/final-report.pdf --account --approval required
-
 # Waits for browser approval, completion, archive copy, and receipt.
-digitalownership register ./out/final-report.pdf --account --approval required --wait
+digitalownership register ./out/final-report.pdf --account \
+  --email owner@example.com --approval required --wait
 ```
 
 Open the URL, sign in to the same account, inspect the fingerprint, scope, and
-target, then choose **Approve registration and spend one credit**. Without
-`--wait`, rerun the same command with `--wait` to resume its idempotent
-approval/job without creating a second registration.
+target, then choose **Approve registration and spend one credit**. If you did
+not include `--wait`, rerun the same command **with** `--wait` to resume its
+idempotent approval/job without creating a second registration.
 
 ## Python Example
 
@@ -168,12 +208,13 @@ def digitalownership(*args):
 token = digitalownership("token")
 os.environ["DIGITALOWNERSHIP_PIPELINE_TOKEN"] = token["accessToken"]
 registration = digitalownership(
-    "register", "out/final-report.json", "--account", "--approval", "none"
+    "register", "out/final-report.json", "--account", "--email",
+    "owner@example.com", "--approval", "none"
 )
 print(registration["registration"]["result"]["registration"]["transactionHash"])
 
 verification = digitalownership(
-    "verify", "out/DigitalOwnershipArchive/final-report.registered.json",
+    "verify", registration["archive"]["archivePath"],
     "--email", "owner@example.com",
 )
 assert verification["verified"] is True
@@ -184,29 +225,49 @@ For human approval, replace `"none"` with `"required", "--wait"`.
 ## R Example
 
 ```r
-# install.packages("jsonlite")
+# install.packages(c("jsonlite", "processx", "purrr"))
 library(jsonlite)
+library(processx)
+library(purrr)
 
 digitalownership <- function(...) {
-  output <- system2("digitalownership", c(...), stdout = TRUE, stderr = TRUE)
-  status <- attr(output, "status")
-  if (!is.null(status) && status != 0) stop(paste(output, collapse = "\n"))
-  fromJSON(paste(output, collapse = "\n"), simplifyVector = FALSE)
+  result <- processx::run(
+    command = "digitalownership",
+    args = c(...),
+    error_on_status = FALSE
+  )
+
+  if (result$status != 0L) stop(result$stderr, call. = FALSE)
+
+  result$stdout |>
+    jsonlite::fromJSON(simplifyVector = FALSE)
 }
 
 # DIGITALOWNERSHIP_PIPELINE_CREDENTIAL is supplied by a protected environment.
 token <- digitalownership("token")
-Sys.setenv(DIGITALOWNERSHIP_PIPELINE_TOKEN = token$accessToken)
+Sys.setenv(DIGITALOWNERSHIP_PIPELINE_TOKEN = token |> 
+  purrr::pluck("accessToken"))
+
 registration <- digitalownership(
-  "register", "out/final-report.rds", "--account", "--approval", "none"
+  "register", "out/final-report.rds", "--account", "--email",
+  "owner@example.com", "--approval", "none"
 )
-print(registration$registration$result$registration$transactionHash)
+
+registration |>
+  purrr::pluck("registration", "result", "registration", "transactionHash") |>
+  print()
+
+archive_path <- registration |>
+  purrr::pluck("archive", "archivePath")
 
 verification <- digitalownership(
-  "verify", "out/DigitalOwnershipArchive/final-report.registered.rds",
+  "verify", archive_path,
   "--email", "owner@example.com"
 )
-stopifnot(verification$verified)
+
+verification |>
+  purrr::pluck("verified") |>
+  stopifnot()
 ```
 
 ## Security And Compatibility
@@ -214,14 +275,19 @@ stopifnot(verification$verified)
 - Pipeline integrations are separate from LibreOffice and Mac device links.
 - The server stores hashes of integration credentials and access tokens, not
   their raw values.
-- Account registration never accepts a free-form registration email. The
-  server derives the account-linked registry key from the authenticated account.
+- Account registration derives the registry key from the authenticated account.
+  `--email` is local receipt metadata only: it is never sent to the server and
+  must match the account that owns the pipeline credential.
 - `--approval none` is authorised automation, not an individual electronic
   signature. `--approval required` adds a signed-in, five-minute approval.
 - This release does not by itself establish GxP, EMA Annex 11, 21 CFR Part 11,
   or other regulated-workflow compliance.
 
 ## Development
+
+These checks are for contributors. Run them from the root of the cloned
+`digitalownership-cli` repository, after `cd digitalownership-cli` and
+`npm ci`; do not run them from a data-pipeline project directory.
 
 ```sh
 npm test

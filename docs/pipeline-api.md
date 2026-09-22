@@ -82,6 +82,13 @@ GET  /api/v1/registrations/{requestId}
 credit; each actual registration checks and reserves its credit transactionally
 when processed.
 
+The pipeline API never returns the account email. The CLI requires a local
+`--email` value when creating an account registration and writes it as
+`accountEmail` in its local `digitalownership-local-record-v1` receipt. That
+value must be the email address of the account that owns the pipeline
+credential; it is not sent to or stored by the pipeline API. Treat the local
+receipt as private metadata when the email is personal or confidential.
+
 For `approvalMode: "required"`, send the same registration payload to
 `POST /api/v1/approvals` instead of `POST /api/v1/registrations`. The response
 contains a five-minute `approvalUrl`. The account owner signs in there and

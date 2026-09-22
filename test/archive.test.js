@@ -36,6 +36,7 @@ test("archive receipt follows the desktop local-record convention", async () => 
         },
       },
     },
+    accountEmail: "owner@example.com",
   });
   const receipt = JSON.parse(await readFile(archive.receiptPath, "utf8"));
 
@@ -46,6 +47,6 @@ test("archive receipt follows the desktop local-record convention", async () => 
   assert.equal(receipt.transactionUrl, `https://arbiscan.io/tx/0x${"c".repeat(64)}`);
   assert.equal(receipt.registrationStartedAt, "2026-09-21 08:00:00");
   assert.equal(receipt.pipelineRequestId, "request-123");
+  assert.equal(receipt.accountEmail, "owner@example.com");
   assert.equal(Object.hasOwn(receipt, "networkChainId"), false);
-  assert.equal(Object.hasOwn(receipt, "accountEmail"), false);
 });
