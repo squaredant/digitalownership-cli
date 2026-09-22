@@ -146,14 +146,6 @@ verified with the correct email. The server does not return the account email
 through the pipeline API. Treat the receipt as private metadata when the email
 is personal or otherwise confidential.
 
-To control where the receipt is written, provide an explicit receipt path:
-
-```sh
-digitalownership register ./out/final-report.json --account \
-  --email owner@example.com --approval none \
-  --no-archive --receipt-out ./evidence/final-report.digitalownership.json
-```
-
 ### Browser-Approved Registration
 
 Use this when an account owner must approve one exact fingerprint:
@@ -168,6 +160,22 @@ Open the URL, sign in to the same account, inspect the fingerprint, scope, and
 target, then choose **Approve registration and spend one credit**. If you did
 not include `--wait`, rerun the same command **with** `--wait` to resume its
 idempotent approval/job without creating a second registration.
+
+### Store Only The Receipt
+
+By default, a completed registration creates both an archive copy and a JSON
+receipt. Use `--no-archive` when the source file must remain in its existing
+controlled location and no duplicate archive copy is wanted. It requires
+`--receipt-out <path>` so that the registration evidence is still retained at
+an explicit local path.
+
+This works with both `--approval none` and `--approval required --wait`:
+
+```sh
+digitalownership register ./out/final-report.json --account \
+  --email owner@example.com --approval none \
+  --no-archive --receipt-out ./evidence/final-report.digitalownership.json
+```
 
 ## Python Example
 

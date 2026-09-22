@@ -50,6 +50,12 @@ Pipeline access is intentionally separate from a device link:
   authenticated account on the server. The pipeline request never supplies a
   free-form registration email.
 
+The first-release API is suitable for controlled engineering and pilot use; it
+does not by itself establish GxP, EU GMP Annex 11, 21 CFR Part 11, or
+electronic-signature compliance. See
+[`future-features-and-risks.md`](future-features-and-risks.md#regulated-workflow-and-audit-ready-pilots)
+for the regulated-workflow roadmap and customer/vendor responsibility boundary.
+
 ## Tables
 
 | Table | Purpose | Sensitive fields |
