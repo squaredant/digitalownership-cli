@@ -1,17 +1,13 @@
 #!/usr/bin/env python3
-"""Verify public DigitalOwnership test vectors with the Python hash implementation."""
+"""Verify public DigitalOwnership test vectors with the bundled Python reference."""
 
 import hashlib
 import json
-import sys
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
-REPO_ROOT = ROOT.parents[1]
-sys.path.insert(0, str(REPO_ROOT / "digitalownership-office-plugin" / "extension"))
 
-from digitalownership_core import compute_document_hash  # noqa: E402
+from fingerprint_core import compute_document_hash
 
 
 PACKAGE_EXTENSIONS = {".odt", ".ods", ".odp", ".odg", ".docx", ".xlsx", ".pptx"}

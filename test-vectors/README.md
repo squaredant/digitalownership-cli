@@ -15,8 +15,9 @@ may be published. They contain no personal, customer, or production registration
   manifest. The idempotency key is deliberately not in the manifest: it is a
   request-level value supplied separately by the CLI or API client.
 - `scripts/generate-fixtures.py`: regenerates the synthetic fixture files.
-- `scripts/verify-vectors.py`: checks the fingerprint values with the current
-  LibreOffice Python implementation.
+- `scripts/verify-vectors.py`: checks the fingerprint values with the bundled
+  Python reference implementation. It is self-contained and runs from a
+  standalone public CLI clone.
 
 ## Rules
 
