@@ -20,13 +20,23 @@ async function withServer(handler, callback) {
   }
 }
 
-test("verify sends a local fingerprint and reports a registered result", async () => {
+async function requestJson(request) {
+  const chunks = [];
+  for await (const chunk of request) chunks.push(chunk);
+  return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+}
+
+test("verify sends the local fingerprint and email in a POST body", async () => {
   await withServer((request, response) => {
     const url = new URL(request.url, "http://localhost");
-    assert.equal(url.searchParams.get("email"), "vector.owner@example.test");
-    assert.match(url.searchParams.get("hash") || "", /^[0-9a-f]{128}$/);
-    response.setHeader("content-type", "application/json");
-    response.end(JSON.stringify({ ok: true, network: "testnet", registryKey: "0x" + "1".repeat(64) }));
+    assert.equal(request.method, "POST");
+    assert.equal(url.search, "");
+    requestJson(request).then((body) => {
+      assert.equal(body.email, "vector.owner@example.test");
+      assert.match(body.hash || "", /^[0-9a-f]{128}$/);
+      response.setHeader("content-type", "application/json");
+      response.end(JSON.stringify({ ok: true, network: "testnet", registryKey: "0x" + "1".repeat(64) }));
+    });
   }, async (url) => {
     const result = await verifyFile(FIXTURE, { email: "vector.owner@example.test", url });
     assert.equal(result.verified, true);
@@ -52,9 +62,13 @@ test("verify hides a derived candidate key when no registration is confirmed", a
 test("doctor performs a read-only valid-hash request", async () => {
   await withServer((request, response) => {
     const url = new URL(request.url, "http://localhost");
-    assert.equal(url.searchParams.get("hash"), "0".repeat(128));
-    response.setHeader("content-type", "application/json");
-    response.end(JSON.stringify({ ok: false, network: "testnet", currentRegistryAddress: "0x" + "2".repeat(40) }));
+    assert.equal(request.method, "POST");
+    assert.equal(url.search, "");
+    requestJson(request).then((body) => {
+      assert.equal(body.hash, "0".repeat(128));
+      response.setHeader("content-type", "application/json");
+      response.end(JSON.stringify({ ok: false, network: "testnet", currentRegistryAddress: "0x" + "2".repeat(40) }));
+    });
   }, async (url) => {
     const result = await doctor({ url });
     assert.equal(result.reachable, true);

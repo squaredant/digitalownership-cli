@@ -12,9 +12,10 @@ uses these tables.
 ## Verification Endpoint
 
 The CLI sends local fingerprints to the public verification endpoint used by
-`digitalownership verify` and `digitalownership doctor`. It sends the
-registration email only when the caller provides `--email`; it never uploads
-the file.
+`digitalownership verify` and `digitalownership doctor`. It uses a JSON `POST`
+request, so the optional registration email is not included in the URL. It
+never uploads the file. The legacy `GET` endpoint remains available for older
+installed tools.
 
 The production default is:
 

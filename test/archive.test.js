@@ -33,6 +33,16 @@ test("archive receipt follows the desktop local-record convention", async () => 
           registryAddress: "0xf495d81eb4A64d213f6BAC2bD23EE9A147956169",
           transactionHash: `0x${"c".repeat(64)}`,
           registeredAt: "1789983920",
+          chainId: "0xa4b1",
+          blockNumber: 123456789,
+          blockHash: `0x${"d".repeat(64)}`,
+          transactionIndex: 4,
+          logIndex: 12,
+          eventName: "DocumentRegistered",
+          eventRegistryKey: `0x${"b".repeat(64)}`,
+          eventRegistrant: "0xa78E595e5513603D8Cdba6acD0977ADf0301f64e",
+          eventRegisteredAt: "1789983920",
+          transactionStatus: "confirmed-success",
         },
       },
     },
@@ -48,5 +58,9 @@ test("archive receipt follows the desktop local-record convention", async () => 
   assert.equal(receipt.registrationStartedAt, "2026-09-21 08:00:00");
   assert.equal(receipt.pipelineRequestId, "request-123");
   assert.equal(receipt.accountEmail, "owner@example.com");
-  assert.equal(Object.hasOwn(receipt, "networkChainId"), false);
+  assert.equal(receipt.chainId, "0xa4b1");
+  assert.equal(receipt.blockNumber, "123456789");
+  assert.equal(receipt.logIndex, "12");
+  assert.equal(receipt.eventName, "DocumentRegistered");
+  assert.equal(receipt.transactionStatus, "confirmed-success");
 });

@@ -108,9 +108,10 @@ digitalownership verify ./report.pdf
 ```
 
 Verification hashes the file locally and checks the public verification
-service at `DIGITALOWNERSHIP_VERIFICATION_URL` (or the production default). A
-confirmed result contains `verified: true` and the final `registryKey`. Verify
-the registered archive copy whenever one exists.
+service at `DIGITALOWNERSHIP_VERIFICATION_URL` (or the production default) by
+JSON `POST`. When supplied, the registration email is sent in the request body,
+not the URL. A confirmed result contains `verified: true` and the final
+`registryKey`. Verify the registered archive copy whenever one exists.
 
 ### Check Connectivity And Credits
 
