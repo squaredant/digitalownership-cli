@@ -1,6 +1,6 @@
 {
   "name": "@squaredant/digitalownership-cli",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "private": true,
   "description": "Local fingerprinting and public verification for DigitalOwnership",
   "type": "module",

@@ -236,6 +236,30 @@ must set the manifest timestamp explicitly. See the
 [web-publication verification guide](docs/web-publication-verification.md)
 for hosting, CORS, and visitor-verification requirements.
 
+### Publish A Verified Web Version
+
+For a controlled web release, use one command to register the canonical JSON,
+create its manifest, and register that manifest. It always uses two separate
+browser approvals: one for the content and one for the public manifest. The
+command prints each approval URL to the terminal and waits for the signed-in
+account owner to approve it.
+
+```sh
+digitalownership publication publish ./public/.well-known/digitalownership/terms-2026-10-02.content.json \
+  --account --email digitalownership@squaredant.com \
+  --url 'https://www.example.org/.well-known/digitalownership/terms-2026-10-02.content.json' \
+  --label 'Terms of Service' --publisher 'Example Organisation' \
+  --approval required --wait \
+  --manifest-out ./public/.well-known/digitalownership/terms-2026-10-02.manifest.json \
+  --receipt-dir ./private-evidence/publications/terms-2026-10-02
+```
+
+`--receipt-dir` must be outside the published web directory. It stores the two
+private local receipts, including the account email. The command deliberately
+does not create `DigitalOwnershipArchive` copies because the canonical source
+file and generated manifest are the exact files that must later be deployed.
+It refuses to overwrite an existing manifest or receipt.
+
 ## Python Example
 
 ```python
