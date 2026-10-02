@@ -240,19 +240,26 @@ for hosting, CORS, and visitor-verification requirements.
 ### Publish A Verified Web Version
 
 For a controlled web release, use one command to register the canonical JSON,
-create its manifest, and register that manifest. It always uses two separate
-browser approvals: one for the content and one for the public manifest. The
-command prints each approval URL to the terminal and waits for the signed-in
-account owner to approve it.
+create its manifest, and register that manifest. Before running it, create a
+DigitalOwnership account, create a pipeline integration under **Developer
+tools**, and set the registration target, pipeline credential, and current
+five-minute access token as described in [Account Setup](#account-setup).
+
+The example assumes that your website repository has a public directory and a
+private evidence directory that is excluded from Git. Replace the email,
+domain, organisation name, label, and versioned filenames with your own.
+It always uses two separate browser approvals: one for the content and one for
+the public manifest. The command prints each approval URL to the terminal and
+waits for the signed-in account owner to approve it.
 
 ```sh
-digitalownership publication publish ./public/.well-known/digitalownership/terms-2026-10-02.content.json \
-  --account --email digitalownership@squaredant.com \
-  --url 'https://www.example.org/.well-known/digitalownership/terms-2026-10-02.content.json' \
+digitalownership publication publish ./public/.well-known/digitalownership/terms-2026-10-01.content.json \
+  --account --email evidence@example.org \
+  --url 'https://www.example.org/.well-known/digitalownership/terms-2026-10-01.content.json' \
   --label 'Terms of Service' --publisher 'Example Organisation' \
   --approval required --wait \
-  --manifest-out ./public/.well-known/digitalownership/terms-2026-10-02.manifest.json \
-  --receipt-dir ./private-evidence/publications/terms-2026-10-02
+  --manifest-out ./public/.well-known/digitalownership/terms-2026-10-01.manifest.json \
+  --receipt-dir ./private-evidence/publications/terms-2026-10-01
 ```
 
 `--receipt-dir` must be outside the published web directory. It stores the two
@@ -266,9 +273,9 @@ read-only private copy only after the CLI confirms it matches its receipt:
 
 ```sh
 digitalownership publication retain \
-  --receipt ./private-evidence/publications/terms-2026-10-02/terms-2026-10-02.content.json.digitalownership.json \
-  --file ./public/.well-known/digitalownership/terms-2026-10-02.content.json \
-  --out ./private-evidence/publications/terms-2026-10-02/archive/terms-2026-10-02.content.json
+  --receipt ./private-evidence/publications/terms-2026-10-01/archive/.DigitalOwnershipRecords/terms-2026-10-01.content.<registry-key>.registered.json.digitalownership.json \
+  --file ./public/.well-known/digitalownership/terms-2026-10-01.content.json \
+  --out ./private-evidence/publications/terms-2026-10-01/archive/terms-2026-10-01.content.<registry-key>.registered.json
 ```
 
 ## Python Example
