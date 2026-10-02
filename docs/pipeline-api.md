@@ -120,6 +120,11 @@ value must be the email address of the account that owns the pipeline
 credential; it is not sent to or stored by the pipeline API. Treat the local
 receipt as private metadata when the email is personal or confidential.
 
+Public verification names the on-chain address `registrant`, matching the
+registry contract. The CLI stores the same value in its private local receipt
+as `registrationWallet`. Do not treat the legacy public `owner` alias as an
+email address; it remains only for compatibility with older installed tools.
+
 For `approvalMode: "required"`, send the same registration payload to
 `POST /api/v1/approvals` instead of `POST /api/v1/registrations`. The response
 contains a five-minute `approvalUrl`. The account owner signs in there and

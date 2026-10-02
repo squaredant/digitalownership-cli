@@ -58,6 +58,8 @@ test("archive receipt follows the desktop local-record convention", async () => 
   assert.equal(receipt.registrationStartedAt, "2026-09-21 08:00:00");
   assert.equal(receipt.pipelineRequestId, "request-123");
   assert.equal(receipt.accountEmail, "owner@example.com");
+  assert.equal(receipt.registrationWallet, "0xa78E595e5513603D8Cdba6acD0977ADf0301f64e");
+  assert.equal(Object.hasOwn(receipt, "owner"), false);
   assert.equal(receipt.chainId, "0xa4b1");
   assert.equal(receipt.blockNumber, "123456789");
   assert.equal(receipt.logIndex, "12");

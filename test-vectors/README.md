@@ -11,9 +11,13 @@ may be published. They contain no personal, customer, or production registration
   derivation vectors.
 - `schemas/registration-manifest.v1.schema.json`: the versioned JSON Schema
   for local multi-file registration input.
+- `schemas/publication-manifest.v1.schema.json`: the versioned JSON Schema for
+  one public canonical web-publication content file.
 - `batch-registration-manifest.v1.example.json`: a synthetic valid batch
   manifest. The idempotency key is deliberately not in the manifest: it is a
   request-level value supplied separately by the CLI or API client.
+- `publication-manifest.v1.example.json`: a synthetic valid manifest for the
+  proposed independent web-publication verification workflow.
 - `scripts/generate-fixtures.py`: regenerates the synthetic fixture files.
 - `scripts/verify-vectors.py`: checks the fingerprint values with the bundled
   Python reference implementation. It is self-contained and runs from a

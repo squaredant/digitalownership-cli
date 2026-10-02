@@ -59,6 +59,18 @@ test("verify hides a derived candidate key when no registration is confirmed", a
   });
 });
 
+test("verify presents the on-chain address as registrant, not owner", async () => {
+  const registrant = "0x" + "4".repeat(40);
+  await withServer((_request, response) => {
+    response.setHeader("content-type", "application/json");
+    response.end(JSON.stringify({ ok: true, owner: registrant, registryKey: "0x" + "5".repeat(64) }));
+  }, async (url) => {
+    const result = await verifyFile(FIXTURE, { url });
+    assert.equal(result.verification.registrant, registrant);
+    assert.equal(Object.hasOwn(result.verification, "owner"), false);
+  });
+});
+
 test("doctor performs a read-only valid-hash request", async () => {
   await withServer((request, response) => {
     const url = new URL(request.url, "http://localhost");

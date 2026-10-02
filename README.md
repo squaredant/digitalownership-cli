@@ -18,6 +18,12 @@ extension.
 Wallet signing adapters, batch manifests, registration-history listing, and
 signed outbound webhooks are not included in this release.
 
+The CLI can create a publication manifest from an existing exact-file receipt
+for the separately documented web-publication verification workflow. See the
+[publication-manifest schema](test-vectors/schemas/publication-manifest.v1.schema.json),
+[synthetic example](test-vectors/publication-manifest.v1.example.json), and
+[publisher workflow](docs/web-publication-verification.md).
+
 ## Install As A Terminal Program
 
 The first release is distributed through GitHub rather than the npm registry.
@@ -68,7 +74,7 @@ export DIGITALOWNERSHIP_PIPELINE_TOKEN='do_at_...'
 Verification uses the DigitalOwnership production service by default. Set
 `DIGITALOWNERSHIP_VERIFICATION_URL` or pass `--verification-url <url>` only
 for a separate deployment or local test service. See
-[the pipeline API guide](https://github.com/squaredant/digitalownership-cli/blob/main/docs/pipeline-api.md#verification-endpoint)
+[the pipeline API guide](docs/pipeline-api.md#verification-endpoint)
 for details.
 
 The integration credential remains valid until revoked. The access token lasts
@@ -96,6 +102,11 @@ The CLI returns a SHA-512 fingerprint and immutable hash scope:
 Exact-file formats are hashed byte-for-byte. Any edit, conversion, or resave
 produces a different fingerprint.
 
+See the [JSON output and receipt reference](docs/receipt-schema.md) for a
+field-by-field explanation. In particular, `includedEntries: []` means the
+complete file was hashed; a populated list identifies the stable package
+entries included in an Office-document fingerprint.
+
 ### Verify
 
 ```sh
@@ -112,6 +123,8 @@ service at `DIGITALOWNERSHIP_VERIFICATION_URL` (or the production default) by
 JSON `POST`. When supplied, the registration email is sent in the request body,
 not the URL. A confirmed result contains `verified: true` and the final
 `registryKey`. Verify the registered archive copy whenever one exists.
+The [JSON output and receipt reference](docs/receipt-schema.md) explains every
+fingerprint, verification, and local-receipt field.
 
 ### Check Connectivity And Credits
 
@@ -147,6 +160,11 @@ verified with the correct email. The server does not return the account email
 through the pipeline API. Treat the receipt as private metadata when the email
 is personal or otherwise confidential.
 
+The receipt stores the on-chain registration address as `registrationWallet`.
+The `digitalownership verify` response calls the same address `registrant`,
+matching the registry contract. Older receipts and API responses may include an
+ambiguous `owner` field; new CLI receipts do not write it.
+
 ### Browser-Approved Registration
 
 Use this when an account owner must approve one exact fingerprint:
@@ -177,6 +195,46 @@ digitalownership register ./out/final-report.json --account \
   --email owner@example.com --approval none \
   --no-archive --receipt-out ./evidence/final-report.digitalownership.json
 ```
+
+### Create A Publication Manifest
+
+For a public web publication, first register the canonical `.json` content
+file as above. Then create its public manifest from the completed local
+receipt. This command only reads and writes local files: it does not contact
+DigitalOwnership or register anything.
+
+```sh
+digitalownership publication manifest \
+  --receipt ./DigitalOwnershipArchive/.DigitalOwnershipRecords/terms-2026-10-01.registered.json.digitalownership.json \
+  --archive ./DigitalOwnershipArchive/terms-2026-10-01.registered.json \
+  --url 'https://www.example.org/.well-known/digitalownership/terms-2026-10-01.content.json' \
+  --label 'Terms of Service' \
+  --publisher 'Example Organisation' \
+  --email evidence@example.org \
+  --out ./terms-2026-10-01.manifest.json
+```
+
+`--archive` is required. The CLI fingerprints it locally and refuses to create
+a manifest unless its SHA-512 fingerprint, algorithm, and hash scope match the
+receipt. `--email` must be a public organisation email and must match the receipt's
+`accountEmail` when that private field exists. It is included in the manifest
+because visitors need it to verify the account-linked registrations. The
+command also accepts completed legacy CLI receipts, but those do not contain an
+account email, so `--email` is required for them. It refuses to overwrite an
+existing output file.
+
+Host byte-identical canonical content at `--url`, then register the generated
+manifest as a second document:
+
+```sh
+digitalownership register ./terms-2026-10-01.manifest.json --account \
+  --email evidence@example.org --approval required --wait
+```
+
+Use `--published-at '2026-10-01T10:00:00Z'` when a reproducible release build
+must set the manifest timestamp explicitly. See the
+[web-publication verification guide](docs/web-publication-verification.md)
+for hosting, CORS, and visitor-verification requirements.
 
 ## Python Example
 

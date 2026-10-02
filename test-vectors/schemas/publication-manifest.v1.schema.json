@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/squaredant/digitalownership-cli/schemas/publication-manifest.v1.schema.json",
+  "title": "DigitalOwnership public publication manifest v1",
+  "description": "A public manifest for one canonical visible-content JSON file. It contains no document bytes or private account data.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "publisher", "registrationEmail", "publishedAt", "files"],
+  "properties": {
+    "schema": { "const": "digitalownership-publication-manifest-v1" },
+    "publisher": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "registrationEmail": { "type": "string", "minLength": 3, "maxLength": 320, "format": "email" },
+    "publishedAt": { "type": "string", "format": "date-time" },
+    "files": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["label", "url", "sha512", "hashScope", "registryKey", "transactionHash"],
+        "properties": {
+          "label": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "url": { "type": "string", "format": "uri", "pattern": "^https://" },
+          "sha512": { "type": "string", "pattern": "^[0-9a-f]{128}$" },
+          "hashScope": { "const": "digitalownership-exact-file-v1" },
+          "registryKey": { "type": "string", "pattern": "^0x[0-9a-fA-F]{64}$" },
+          "transactionHash": { "type": "string", "pattern": "^0x[0-9a-fA-F]{64}$" }
+        }
+      }
+    }
+  }
+}

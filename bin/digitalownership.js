@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 
+import { readFile, writeFile } from "node:fs/promises";
 import { fingerprintFile } from "../lib/fingerprint.js";
 import { doctor, verifyFile } from "../lib/verification.js";
 import { getBalance, issueAccessToken, registerFile, requestApprovalFile, waitForApproval, waitForRegistration } from "../lib/pipeline-api.js";
 import { writeArchiveReceipt } from "../lib/archive.js";
+import { createPublicationManifest } from "../lib/publication-manifest.js";
 
 const HELP = `DigitalOwnership CLI (pre-release)
 
@@ -14,6 +16,7 @@ Usage:
   digitalownership token [--pipeline-api-url <url>]
   digitalownership balance [--pipeline-api-url <url>]
   digitalownership register <file> --account --email <account-email> --approval none|required [--wait] [--dry-run] [--no-archive --receipt-out <path>]
+  digitalownership publication manifest --receipt <receipt.json> --archive <registered-file> --url <https-url> --label <label> --publisher <publisher> --out <manifest.json> [--email <public-account-email>] [--published-at <ISO-8601>]
 
 Environment:
   DIGITALOWNERSHIP_VERIFICATION_URL  Public verification endpoint.
@@ -37,7 +40,7 @@ function parseOptions(args) {
       continue;
     }
     const name = value.slice(2);
-    if (!new Set(["email", "verification-url", "pipeline-api-url", "approval", "account", "dry-run", "no-archive", "receipt-out", "wait"]).has(name)) {
+    if (!new Set(["email", "verification-url", "pipeline-api-url", "approval", "account", "dry-run", "no-archive", "receipt-out", "wait", "receipt", "archive", "url", "label", "publisher", "out", "published-at"]).has(name)) {
       throw new Error(`Unknown option: ${value}`);
     }
     if (new Set(["account", "dry-run", "no-archive", "wait"]).has(name)) {
@@ -62,6 +65,38 @@ async function main() {
   const { options, positional } = parseOptions(args);
   const url = options["verification-url"];
 
+  if (command === "publication") {
+    if (positional.length !== 1 || positional[0] !== "manifest") {
+      throw new Error("Usage: digitalownership publication manifest --receipt <receipt.json> --archive <registered-file> --url <https-url> --label <label> --publisher <publisher> --out <manifest.json>");
+    }
+    for (const name of ["receipt", "archive", "url", "label", "publisher", "out"]) {
+      if (!options[name]?.trim()) throw new Error(`--${name} is required for publication manifest.`);
+    }
+    let receipt;
+    try {
+      receipt = JSON.parse(await readFile(options.receipt, "utf8"));
+    } catch (error) {
+      throw new Error(`Cannot read receipt JSON: ${error.message}`);
+    }
+    const archiveFingerprint = await fingerprintFile(options.archive);
+    const manifest = createPublicationManifest({
+      receipt,
+      archiveFingerprint,
+      url: options.url,
+      label: options.label,
+      publisher: options.publisher,
+      email: options.email,
+      publishedAt: options["published-at"],
+    });
+    try {
+      await writeFile(options.out, `${JSON.stringify(manifest, null, 2)}\n`, { encoding: "utf8", flag: "wx" });
+    } catch (error) {
+      if (error.code === "EEXIST") throw new Error(`Refusing to overwrite existing manifest: ${options.out}`);
+      throw new Error(`Cannot write manifest: ${error.message}`);
+    }
+    process.stdout.write(`${JSON.stringify({ ok: true, manifestPath: options.out, archive: { path: options.archive, fingerprint: archiveFingerprint }, manifest })}\n`);
+    return;
+  }
   if (command === "fingerprint") {
     if (positional.length !== 1) throw new Error("Usage: digitalownership fingerprint <file>");
     process.stdout.write(`${JSON.stringify({ ok: true, fingerprint: await fingerprintFile(positional[0]) })}\n`);

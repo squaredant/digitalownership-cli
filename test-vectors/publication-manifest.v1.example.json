@@ -1,0 +1,16 @@
+{
+  "schema": "digitalownership-publication-manifest-v1",
+  "publisher": "Example Organisation",
+  "registrationEmail": "evidence@example.org",
+  "publishedAt": "2026-10-01T10:00:00Z",
+  "files": [
+    {
+      "label": "Terms of Service",
+      "url": "https://www.example.org/.well-known/digitalownership/terms-2026-10-01.content.json",
+      "sha512": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+      "hashScope": "digitalownership-exact-file-v1",
+      "registryKey": "0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+      "transactionHash": "0xfedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210"
+    }
+  ]
+}
