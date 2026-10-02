@@ -126,8 +126,8 @@ test("publication publish coordinates two required approvals and keeps receipts 
     assert.equal(approvalCount, 2);
     assert.match(stderr, /Approve canonical content registration: https:\/\/approve\.example\/1/);
     assert.match(stderr, /Approve publication manifest registration: https:\/\/approve\.example\/2/);
-    assert.equal(output.publication.content.receiptPath, path.join(receiptDir, "terms.content.json.digitalownership.json"));
-    assert.equal(output.publication.manifest.receiptPath, path.join(receiptDir, "terms.manifest.json.digitalownership.json"));
+    assert.match(output.publication.content.receiptPath, /archive\/\.DigitalOwnershipRecords\/terms\.content\.[0-9a-f]{16}\.registered\.json\.digitalownership\.json$/);
+    assert.match(output.publication.manifest.receiptPath, /archive\/\.DigitalOwnershipRecords\/terms\.manifest\.[0-9a-f]{16}\.registered\.json\.digitalownership\.json$/);
     const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
     assert.equal(manifest.registrationEmail, "digitalownership@squaredant.com");
     assert.equal(manifest.files[0].url, "https://digitalownership.squaredant.com/.well-known/digitalownership/terms.content.json");

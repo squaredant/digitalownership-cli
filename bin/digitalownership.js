@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
-import { access, mkdir, readFile, writeFile } from "node:fs/promises";
+import { access, chmod, copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { fingerprintFile } from "../lib/fingerprint.js";
+import { emailAnchoredRegistryKey, fingerprintFile } from "../lib/fingerprint.js";
 import { doctor, verifyFile } from "../lib/verification.js";
 import { getBalance, issueAccessToken, registerFile, requestApprovalFile, waitForApproval, waitForRegistration } from "../lib/pipeline-api.js";
-import { writeArchiveReceipt } from "../lib/archive.js";
+import { archiveFileName, writeArchiveReceipt } from "../lib/archive.js";
 import { createPublicationManifest } from "../lib/publication-manifest.js";
 
 const HELP = `DigitalOwnership CLI (pre-release)
@@ -19,6 +19,7 @@ Usage:
   digitalownership register <file> --account --email <account-email> --approval none|required [--wait] [--dry-run] [--no-archive --receipt-out <path>]
   digitalownership publication manifest --receipt <receipt.json> --archive <registered-file> --url <https-url> --label <label> --publisher <publisher> --out <manifest.json> [--email <public-account-email>] [--published-at <ISO-8601>]
   digitalownership publication publish <content.json> --account --email <public-account-email> --url <https-url> --label <label> --publisher <publisher> --approval required --wait --manifest-out <manifest.json> --receipt-dir <private-directory> [--published-at <ISO-8601>]
+  digitalownership publication retain --receipt <receipt.json> --file <registered-file> --out <private-copy>
 
 Environment:
   DIGITALOWNERSHIP_VERIFICATION_URL  Public verification endpoint.
@@ -42,7 +43,7 @@ function parseOptions(args) {
       continue;
     }
     const name = value.slice(2);
-    if (!new Set(["email", "verification-url", "pipeline-api-url", "approval", "account", "dry-run", "no-archive", "receipt-out", "wait", "receipt", "archive", "url", "label", "publisher", "out", "manifest-out", "receipt-dir", "published-at"]).has(name)) {
+    if (!new Set(["email", "verification-url", "pipeline-api-url", "approval", "account", "dry-run", "no-archive", "receipt-out", "wait", "receipt", "archive", "file", "url", "label", "publisher", "out", "manifest-out", "receipt-dir", "published-at"]).has(name)) {
       throw new Error(`Unknown option: ${value}`);
     }
     if (new Set(["account", "dry-run", "no-archive", "wait"]).has(name)) {
@@ -76,7 +77,7 @@ function showApproval(approval, label) {
   process.stderr.write(`${label}: ${approval.approvalUrl}\n`);
 }
 
-async function registerWithRequiredApproval(sourcePath, { email, receiptOut, noArchive = false, url, label = "Open the browser approval URL" } = {}) {
+async function registerWithRequiredApproval(sourcePath, { email, receiptOut, archiveDir, noArchive = false, url, label = "Open the browser approval URL" } = {}) {
   const result = await requestApprovalWithRefresh(sourcePath, { url });
   const approval = result.response.approval;
   showApproval(approval, label);
@@ -93,6 +94,7 @@ async function registerWithRequiredApproval(sourcePath, { email, receiptOut, noA
     accountEmail: email,
     noArchive,
     receiptOut,
+    archiveDir,
   });
   return { ...result, approval: approved, registration, archive };
 }
@@ -111,24 +113,28 @@ async function publishPublication(contentPath, options) {
   const email = options.email.trim();
   const receiptDir = path.resolve(options["receipt-dir"]);
   const manifestPath = path.resolve(options["manifest-out"]);
-  const contentReceiptPath = path.join(receiptDir, `${path.basename(contentPath)}.digitalownership.json`);
-  const manifestReceiptPath = path.join(receiptDir, `${path.basename(manifestPath)}.digitalownership.json`);
+  const archiveDir = path.join(receiptDir, "archive");
+  const recordsDir = path.join(archiveDir, ".DigitalOwnershipRecords");
+  const contentFingerprint = await fingerprintFile(contentPath);
+  const contentArchiveName = archiveFileName(contentPath, contentFingerprint, emailAnchoredRegistryKey(contentFingerprint.documentFingerprint, email));
+  const contentArchivePath = path.join(archiveDir, contentArchiveName);
+  const contentReceiptPath = path.join(recordsDir, `${contentArchiveName}.digitalownership.json`);
   await mkdir(receiptDir, { recursive: true });
+  await mkdir(archiveDir, { recursive: true });
   await mkdir(path.dirname(manifestPath), { recursive: true });
+  await assertNewFile(contentArchivePath, "content archive");
   await assertNewFile(contentReceiptPath, "content receipt");
   await assertNewFile(manifestPath, "manifest");
-  await assertNewFile(manifestReceiptPath, "manifest receipt");
 
   const content = await registerWithRequiredApproval(contentPath, {
     email,
-    noArchive: true,
-    receiptOut: contentReceiptPath,
+    archiveDir,
     url: options["pipeline-api-url"],
     label: "Approve canonical content registration",
   });
   const manifest = createPublicationManifest({
     receipt: content.archive.receipt,
-    archiveFingerprint: await fingerprintFile(contentPath),
+    archiveFingerprint: await fingerprintFile(content.archive.archivePath),
     url: options.url,
     label: options.label,
     publisher: options.publisher,
@@ -136,10 +142,15 @@ async function publishPublication(contentPath, options) {
     publishedAt: options["published-at"],
   });
   await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, { encoding: "utf8", flag: "wx" });
+  const manifestFingerprint = await fingerprintFile(manifestPath);
+  const manifestArchiveName = archiveFileName(manifestPath, manifestFingerprint, emailAnchoredRegistryKey(manifestFingerprint.documentFingerprint, email));
+  const manifestArchivePath = path.join(archiveDir, manifestArchiveName);
+  const manifestReceiptPath = path.join(recordsDir, `${manifestArchiveName}.digitalownership.json`);
+  await assertNewFile(manifestArchivePath, "manifest archive");
+  await assertNewFile(manifestReceiptPath, "manifest receipt");
   const manifestRegistration = await registerWithRequiredApproval(manifestPath, {
     email,
-    noArchive: true,
-    receiptOut: manifestReceiptPath,
+    archiveDir,
     url: options["pipeline-api-url"],
     label: "Approve publication manifest registration",
   });
@@ -147,6 +158,25 @@ async function publishPublication(contentPath, options) {
     content: { path: path.resolve(contentPath), receiptPath: contentReceiptPath, registration: content.registration },
     manifest: { path: manifestPath, receiptPath: manifestReceiptPath, registration: manifestRegistration.registration },
   };
+}
+
+async function retainPublicationFile(options) {
+  let receipt;
+  try {
+    receipt = JSON.parse(await readFile(options.receipt, "utf8"));
+  } catch (error) {
+    throw new Error(`Cannot read receipt JSON: ${error.message}`);
+  }
+  const fingerprint = await fingerprintFile(options.file);
+  if (receipt.status !== "registered" || receipt.documentHash !== fingerprint.documentFingerprint || receipt.hashAlgorithm !== fingerprint.hashAlgorithm || receipt.hashScope !== fingerprint.hashScope) {
+    throw new Error("The file does not match the completed registration receipt.");
+  }
+  const outputPath = path.resolve(options.out);
+  await assertNewFile(outputPath, "retained evidence copy");
+  await mkdir(path.dirname(outputPath), { recursive: true });
+  await copyFile(options.file, outputPath);
+  await chmod(outputPath, 0o444);
+  return { sourcePath: path.resolve(options.file), outputPath, fingerprint };
 }
 
 async function main() {
@@ -160,6 +190,13 @@ async function main() {
   const url = options["verification-url"];
 
   if (command === "publication") {
+    if (positional[0] === "retain") {
+      if (positional.length !== 1 || !options.receipt?.trim() || !options.file?.trim() || !options.out?.trim()) {
+        throw new Error("Usage: digitalownership publication retain --receipt <receipt.json> --file <registered-file> --out <private-copy>");
+      }
+      process.stdout.write(`${JSON.stringify({ ok: true, retained: await retainPublicationFile(options) })}\n`);
+      return;
+    }
     if (positional[0] === "publish") {
       if (positional.length !== 2 || !options.account || options.approval !== "required" || !options.wait) {
         throw new Error("Usage: digitalownership publication publish <content.json> --account --email <public-account-email> --url <https-url> --label <label> --publisher <publisher> --approval required --wait --manifest-out <manifest.json> --receipt-dir <private-directory>");

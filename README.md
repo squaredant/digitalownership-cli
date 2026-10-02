@@ -256,10 +256,20 @@ digitalownership publication publish ./public/.well-known/digitalownership/terms
 ```
 
 `--receipt-dir` must be outside the published web directory. It stores the two
-private local receipts, including the account email. The command deliberately
-does not create `DigitalOwnershipArchive` copies because the canonical source
-file and generated manifest are the exact files that must later be deployed.
-It refuses to overwrite an existing manifest or receipt.
+private local receipts, including the account email, and an `archive/`
+subdirectory with read-only copies of the registered canonical file and
+manifest. The public source files remain the exact files that must later be
+deployed. It refuses to overwrite an existing manifest or receipt.
+
+For an earlier publication created before this archive behavior, retain a
+read-only private copy only after the CLI confirms it matches its receipt:
+
+```sh
+digitalownership publication retain \
+  --receipt ./private-evidence/publications/terms-2026-10-02/terms-2026-10-02.content.json.digitalownership.json \
+  --file ./public/.well-known/digitalownership/terms-2026-10-02.content.json \
+  --out ./private-evidence/publications/terms-2026-10-02/archive/terms-2026-10-02.content.json
+```
 
 ## Python Example
 
