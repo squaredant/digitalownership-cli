@@ -22,6 +22,7 @@ The CLI can create a publication manifest from an existing exact-file receipt
 for the separately documented web-publication verification workflow. See the
 [publication-manifest schema](test-vectors/schemas/publication-manifest.v1.schema.json),
 [synthetic example](test-vectors/publication-manifest.v1.example.json), and
+[web publication quick start](examples/web-publication/README.md), and
 [publisher workflow](docs/web-publication-verification.md).
 
 ## Install As A Terminal Program

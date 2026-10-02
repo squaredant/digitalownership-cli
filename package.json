@@ -11,6 +11,7 @@
     "bin",
     "lib",
     "docs",
+    "examples",
     "test-vectors/README.md",
     "test-vectors/*.json",
     "test-vectors/fixtures",

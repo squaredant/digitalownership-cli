@@ -1,0 +1,13 @@
+{
+  "schema": "publisher-visible-content-v1",
+  "publication": "Example Terms",
+  "version": "2026-10-01",
+  "sections": [
+    {
+      "heading": "Service",
+      "paragraphs": [
+        "This is an example canonical paragraph. Replace it before registration."
+      ]
+    }
+  ]
+}
