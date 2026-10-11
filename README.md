@@ -143,7 +143,7 @@ Use this only for an authorised automated pipeline:
 
 ```sh
 digitalownership register ./out/final-report.json --account \
-  --email owner@example.com --approval none
+  --approval none
 ```
 
 `--account` selects an account-linked registration through the
@@ -155,11 +155,11 @@ registration flag. Wallet signing is not included in this CLI release.
 The command waits for completion, creates a read-only archive copy in
 `DigitalOwnershipArchive`, and writes a `digitalownership-local-record-v1`
 receipt in `DigitalOwnershipArchive/.DigitalOwnershipRecords/`. `--email` must
-be the email address of the account that owns the pipeline credential. The CLI
-copies it to the local receipt as `accountEmail`, so the archive can later be
-verified with the correct email. The server does not return the account email
-through the pipeline API. Treat the receipt as private metadata when the email
-is personal or otherwise confidential.
+is not accepted for account registration. The CLI obtains the email from the
+authenticated pipeline account and writes it to the local receipt as
+`accountEmail`, so the archive can later be verified with the correct email.
+Treat the receipt as private metadata when the email is personal or otherwise
+confidential.
 
 The receipt stores the on-chain registration address as `registrationWallet`.
 The `digitalownership verify` response calls the same address `registrant`,
@@ -173,7 +173,7 @@ Use this when an account owner must approve one exact fingerprint:
 ```sh
 # Waits for browser approval, completion, archive copy, and receipt.
 digitalownership register ./out/final-report.pdf --account \
-  --email owner@example.com --approval required --wait
+  --approval required --wait
 ```
 
 Open the URL, sign in to the same account, inspect the fingerprint, scope, and
@@ -193,7 +193,7 @@ This works with both `--approval none` and `--approval required --wait`:
 
 ```sh
 digitalownership register ./out/final-report.json --account \
-  --email owner@example.com --approval none \
+  --approval none \
   --no-archive --receipt-out ./evidence/final-report.digitalownership.json
 ```
 
@@ -211,25 +211,23 @@ digitalownership publication manifest \
   --url 'https://www.example.org/.well-known/digitalownership/terms-2026-10-01.content.json' \
   --label 'Terms of Service' \
   --publisher 'Example Organisation' \
-  --email evidence@example.org \
   --out ./terms-2026-10-01.manifest.json
 ```
 
 `--archive` is required. The CLI fingerprints it locally and refuses to create
 a manifest unless its SHA-512 fingerprint, algorithm, and hash scope match the
-receipt. `--email` must be a public organisation email and must match the receipt's
-`accountEmail` when that private field exists. It is included in the manifest
-because visitors need it to verify the account-linked registrations. The
-command also accepts completed legacy CLI receipts, but those do not contain an
-account email, so `--email` is required for them. It refuses to overwrite an
-existing output file.
+receipt. The receipt's `accountEmail` is included in the manifest because
+visitors need it to verify account-linked registrations. The command also
+accepts completed legacy CLI receipts, but those do not contain an account
+email, so `--email` is required for those legacy receipts. It refuses to
+overwrite an existing output file.
 
 Host byte-identical canonical content at `--url`, then register the generated
 manifest as a second document:
 
 ```sh
 digitalownership register ./terms-2026-10-01.manifest.json --account \
-  --email evidence@example.org --approval required --wait
+  --approval required --wait
 ```
 
 Use `--published-at '2026-10-01T10:00:00Z'` when a reproducible release build
@@ -246,15 +244,15 @@ tools**, and set the registration target, pipeline credential, and current
 five-minute access token as described in [Account Setup](#account-setup).
 
 The example assumes that your website repository has a public directory and a
-private evidence directory that is excluded from Git. Replace the email,
-domain, organisation name, label, and versioned filenames with your own.
+private evidence directory that is excluded from Git. Replace the domain,
+organisation name, label, and versioned filenames with your own.
 It always uses two separate browser approvals: one for the content and one for
 the public manifest. The command prints each approval URL to the terminal and
 waits for the signed-in account owner to approve it.
 
 ```sh
 digitalownership publication publish ./public/.well-known/digitalownership/terms-2026-10-01.content.json \
-  --account --email evidence@example.org \
+  --account \
   --url 'https://www.example.org/.well-known/digitalownership/terms-2026-10-01.content.json' \
   --label 'Terms of Service' --publisher 'Example Organisation' \
   --approval required --wait \
@@ -296,14 +294,13 @@ def digitalownership(*args):
 token = digitalownership("token")
 os.environ["DIGITALOWNERSHIP_PIPELINE_TOKEN"] = token["accessToken"]
 registration = digitalownership(
-    "register", "out/final-report.json", "--account", "--email",
-    "owner@example.com", "--approval", "none"
+    "register", "out/final-report.json", "--account", "--approval", "none"
 )
 print(registration["registration"]["result"]["registration"]["transactionHash"])
 
 verification = digitalownership(
     "verify", registration["archive"]["archivePath"],
-    "--email", "owner@example.com",
+    "--email", registration["archive"]["receipt"]["accountEmail"],
 )
 assert verification["verified"] is True
 ```
@@ -337,8 +334,7 @@ Sys.setenv(DIGITALOWNERSHIP_PIPELINE_TOKEN = token |>
   purrr::pluck("accessToken"))
 
 registration <- digitalownership(
-  "register", "out/final-report.rds", "--account", "--email",
-  "owner@example.com", "--approval", "none"
+  "register", "out/final-report.rds", "--account", "--approval", "none"
 )
 
 registration |>
@@ -350,7 +346,7 @@ archive_path <- registration |>
 
 verification <- digitalownership(
   "verify", archive_path,
-  "--email", "owner@example.com"
+  "--email", registration |> purrr::pluck("archive", "receipt", "accountEmail")
 )
 
 verification |>
@@ -364,8 +360,8 @@ verification |>
 - The server stores hashes of integration credentials and access tokens, not
   their raw values.
 - Account registration derives the registry key from the authenticated account.
-  `--email` is local receipt metadata only: it is never sent to the server and
-  must match the account that owns the pipeline credential.
+  The CLI retrieves that account email only through its authenticated pipeline
+  token and writes it to the private local receipt.
 - `--approval none` is authorised automation, not an individual electronic
   signature. `--approval required` adds a signed-in, five-minute approval.
 - This release does not by itself establish GxP, EMA Annex 11, 21 CFR Part 11,

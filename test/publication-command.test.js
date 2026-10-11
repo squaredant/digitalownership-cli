@@ -12,6 +12,20 @@ const execFileAsync = promisify(execFile);
 const registryKey = `0x${"b".repeat(64)}`;
 const transactionHash = `0x${"c".repeat(64)}`;
 
+test("account registration rejects a caller-supplied email", async () => {
+  await assert.rejects(
+    () => execFileAsync(process.execPath, [
+      "bin/digitalownership.js", "register", "package.json",
+      "--account", "--email", "wrong@example.com", "--approval", "none",
+    ], { cwd: path.resolve(path.dirname(new URL(import.meta.url).pathname), "..") }),
+    (error) => {
+      const output = JSON.parse(error.stderr);
+      assert.match(output.error, /--email is not used for account registration/);
+      return true;
+    },
+  );
+});
+
 test("publication manifest command creates a public manifest from a local receipt", async () => {
   const directory = await mkdtemp(path.join(tmpdir(), "digitalownership-publication-"));
   const receiptPath = path.join(directory, "content.digitalownership.json");
@@ -68,6 +82,10 @@ test("publication publish coordinates two required approvals and keeps receipts 
       respond({ approval: { id: `approval-${approvalCount}`, status: "pending", approvalUrl: `https://approve.example/${approvalCount}` } });
       return;
     }
+    if (request.method === "GET" && request.url === "/api/v1/account") {
+      respond({ account: { email: "digitalownership@squaredant.com" } });
+      return;
+    }
     if (request.method === "GET" && request.url?.startsWith("/api/v1/approvals/approval-")) {
       const id = request.url.split("/").pop();
       respond({ approval: { id, status: "approved", registrationRequestId: `registration-${id}` } });
@@ -104,7 +122,7 @@ test("publication publish coordinates two required approvals and keeps receipts 
   try {
     const { stdout, stderr } = await execFileAsync(process.execPath, [
       "bin/digitalownership.js", "publication", "publish", contentPath,
-      "--account", "--email", "digitalownership@squaredant.com",
+      "--account",
       "--url", "https://digitalownership.squaredant.com/.well-known/digitalownership/terms.content.json",
       "--label", "Terms", "--publisher", "SquaredAnt GmbH",
       "--approval", "required", "--wait",

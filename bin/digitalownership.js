@@ -4,7 +4,7 @@ import { access, chmod, copyFile, mkdir, readFile, writeFile } from "node:fs/pro
 import path from "node:path";
 import { emailAnchoredRegistryKey, fingerprintFile } from "../lib/fingerprint.js";
 import { doctor, verifyFile } from "../lib/verification.js";
-import { getBalance, issueAccessToken, registerFile, requestApprovalFile, waitForApproval, waitForRegistration } from "../lib/pipeline-api.js";
+import { getAccount, getBalance, issueAccessToken, registerFile, requestApprovalFile, waitForApproval, waitForRegistration } from "../lib/pipeline-api.js";
 import { archiveFileName, writeArchiveReceipt } from "../lib/archive.js";
 import { createPublicationManifest } from "../lib/publication-manifest.js";
 
@@ -16,9 +16,9 @@ Usage:
   digitalownership doctor [--verification-url <url>]
   digitalownership token [--pipeline-api-url <url>]
   digitalownership balance [--pipeline-api-url <url>]
-  digitalownership register <file> --account --email <account-email> --approval none|required [--wait] [--dry-run] [--no-archive --receipt-out <path>]
+  digitalownership register <file> --account --approval none|required [--wait] [--dry-run] [--no-archive --receipt-out <path>]
   digitalownership publication manifest --receipt <receipt.json> --archive <registered-file> --url <https-url> --label <label> --publisher <publisher> --out <manifest.json> [--email <public-account-email>] [--published-at <ISO-8601>]
-  digitalownership publication publish <content.json> --account --email <public-account-email> --url <https-url> --label <label> --publisher <publisher> --approval required --wait --manifest-out <manifest.json> --receipt-dir <private-directory> [--published-at <ISO-8601>]
+  digitalownership publication publish <content.json> --account --url <https-url> --label <label> --publisher <publisher> --approval required --wait --manifest-out <manifest.json> --receipt-dir <private-directory> [--published-at <ISO-8601>]
   digitalownership publication retain --receipt <receipt.json> --file <registered-file> --out <private-copy>
 
 Environment:
@@ -62,13 +62,36 @@ function isExpiredTokenError(error) {
   return /invalid or expired/i.test(error?.message || "");
 }
 
-async function requestApprovalWithRefresh(sourcePath, { url } = {}) {
+async function requestApprovalWithRefresh(sourcePath, { token, url } = {}) {
   try {
-    return await requestApprovalFile(sourcePath, { url });
+    return await requestApprovalFile(sourcePath, { token, url });
   } catch (error) {
     if (!isExpiredTokenError(error) || !process.env.DIGITALOWNERSHIP_PIPELINE_CREDENTIAL) throw error;
     const { accessToken } = await issueAccessToken({ url });
     return requestApprovalFile(sourcePath, { token: accessToken, url });
+  }
+}
+
+async function accountIdentityWithRefresh({ url } = {}) {
+  let token = process.env.DIGITALOWNERSHIP_PIPELINE_TOKEN;
+  try {
+    const result = await getAccount({ token, url });
+    return { email: String(result?.account?.email || "").trim().toLowerCase(), token };
+  } catch (error) {
+    if (!isExpiredTokenError(error) || !process.env.DIGITALOWNERSHIP_PIPELINE_CREDENTIAL) throw error;
+    token = (await issueAccessToken({ url })).accessToken;
+    const result = await getAccount({ token, url });
+    return { email: String(result?.account?.email || "").trim().toLowerCase(), token };
+  }
+}
+
+async function registerFileWithRefresh(sourcePath, { approvalMode, dryRun, token, url } = {}) {
+  try {
+    return await registerFile(sourcePath, { approvalMode, dryRun, token, url });
+  } catch (error) {
+    if (!isExpiredTokenError(error) || !process.env.DIGITALOWNERSHIP_PIPELINE_CREDENTIAL) throw error;
+    const refreshedToken = (await issueAccessToken({ url })).accessToken;
+    return registerFile(sourcePath, { approvalMode, dryRun, token: refreshedToken, url });
   }
 }
 
@@ -77,21 +100,21 @@ function showApproval(approval, label) {
   process.stderr.write(`${label}: ${approval.approvalUrl}\n`);
 }
 
-async function registerWithRequiredApproval(sourcePath, { email, receiptOut, archiveDir, noArchive = false, url, label = "Open the browser approval URL" } = {}) {
-  const result = await requestApprovalWithRefresh(sourcePath, { url });
+async function registerWithRequiredApproval(sourcePath, { accountEmail, receiptOut, archiveDir, noArchive = false, token, url, label = "Open the browser approval URL" } = {}) {
+  const result = await requestApprovalWithRefresh(sourcePath, { token, url });
   const approval = result.response.approval;
   showApproval(approval, label);
-  const approved = await waitForApproval(approval.id, { url });
+  const approved = await waitForApproval(approval.id, { token, url });
   if (approved.status !== "approved" || !approved.registrationRequestId) {
     throw new Error(`Pipeline approval is ${approved.status || "not approved"}.`);
   }
-  const registration = await waitForRegistration(approved.registrationRequestId, { url });
+  const registration = await waitForRegistration(approved.registrationRequestId, { token, url });
   if (registration.status !== "completed") throw new Error(registration.error || "Registration failed.");
   const archive = await writeArchiveReceipt({
     sourcePath,
     fingerprint: result.fingerprint,
     registration,
-    accountEmail: email,
+    accountEmail,
     noArchive,
     receiptOut,
     archiveDir,
@@ -109,8 +132,8 @@ async function assertNewFile(targetPath, label) {
   throw new Error(`Refusing to overwrite existing ${label}: ${targetPath}`);
 }
 
-async function publishPublication(contentPath, options) {
-  const email = options.email.trim();
+async function publishPublication(contentPath, options, identity) {
+  const { email, token } = identity;
   const receiptDir = path.resolve(options["receipt-dir"]);
   const manifestPath = path.resolve(options["manifest-out"]);
   const archiveDir = path.join(receiptDir, "archive");
@@ -127,8 +150,9 @@ async function publishPublication(contentPath, options) {
   await assertNewFile(manifestPath, "manifest");
 
   const content = await registerWithRequiredApproval(contentPath, {
-    email,
+    accountEmail: email,
     archiveDir,
+    token,
     url: options["pipeline-api-url"],
     label: "Approve canonical content registration",
   });
@@ -149,8 +173,9 @@ async function publishPublication(contentPath, options) {
   await assertNewFile(manifestArchivePath, "manifest archive");
   await assertNewFile(manifestReceiptPath, "manifest receipt");
   const manifestRegistration = await registerWithRequiredApproval(manifestPath, {
-    email,
+    accountEmail: email,
     archiveDir,
+    token,
     url: options["pipeline-api-url"],
     label: "Approve publication manifest registration",
   });
@@ -199,12 +224,15 @@ async function main() {
     }
     if (positional[0] === "publish") {
       if (positional.length !== 2 || !options.account || options.approval !== "required" || !options.wait) {
-        throw new Error("Usage: digitalownership publication publish <content.json> --account --email <public-account-email> --url <https-url> --label <label> --publisher <publisher> --approval required --wait --manifest-out <manifest.json> --receipt-dir <private-directory>");
+        throw new Error("Usage: digitalownership publication publish <content.json> --account --url <https-url> --label <label> --publisher <publisher> --approval required --wait --manifest-out <manifest.json> --receipt-dir <private-directory>");
       }
-      for (const name of ["email", "url", "label", "publisher", "manifest-out", "receipt-dir"]) {
+      if (options.email) throw new Error("--email is not used for account registration. The authenticated pipeline account supplies the private receipt email.");
+      for (const name of ["url", "label", "publisher", "manifest-out", "receipt-dir"]) {
         if (!options[name]?.trim()) throw new Error(`--${name} is required for publication publish.`);
       }
-      const result = await publishPublication(positional[1], options);
+      const identity = await accountIdentityWithRefresh({ url: options["pipeline-api-url"] });
+      if (!identity.email) throw new Error("The authenticated pipeline account has no usable email address.");
+      const result = await publishPublication(positional[1], options, identity);
       process.stdout.write(`${JSON.stringify({ ok: true, publication: result })}\n`);
       return;
     }
@@ -268,45 +296,51 @@ async function main() {
     return;
   }
   if (command === "register") {
-    if (positional.length !== 1 || !options.account || !options.email?.trim()) {
-      throw new Error("Usage: digitalownership register <file> --account --email <account-email> --approval none|required [--wait] [--dry-run]");
+    if (positional.length !== 1 || !options.account) {
+      throw new Error("Usage: digitalownership register <file> --account --approval none|required [--wait] [--dry-run]");
     }
+    if (options.email) throw new Error("--email is not used for account registration. The authenticated pipeline account supplies the private receipt email.");
     if (options["no-archive"] && !options["receipt-out"]) {
       throw new Error("--no-archive requires --receipt-out <path> so the registration receipt is retained.");
     }
     if (options.approval === "required") {
       if (options["dry-run"]) throw new Error("--dry-run is available only with --approval none.");
-      const result = await requestApprovalWithRefresh(positional[0], { url: options["pipeline-api-url"] });
+      const identity = await accountIdentityWithRefresh({ url: options["pipeline-api-url"] });
+      if (!identity.email) throw new Error("The authenticated pipeline account has no usable email address.");
+      const result = await requestApprovalWithRefresh(positional[0], { token: identity.token, url: options["pipeline-api-url"] });
       const approval = result.response.approval;
       if (!options.wait) {
         process.stdout.write(`${JSON.stringify({ ok: true, ...result, approval })}\n`);
         return;
       }
       showApproval(approval, "Open the browser approval URL");
-      const approved = await waitForApproval(approval.id, { url: options["pipeline-api-url"] });
+      const approved = await waitForApproval(approval.id, { token: identity.token, url: options["pipeline-api-url"] });
       if (approved.status !== "approved" || !approved.registrationRequestId) throw new Error(`Pipeline approval is ${approved.status || "not approved"}.`);
-      const registration = await waitForRegistration(approved.registrationRequestId, { url: options["pipeline-api-url"] });
+      const registration = await waitForRegistration(approved.registrationRequestId, { token: identity.token, url: options["pipeline-api-url"] });
       if (registration.status !== "completed") throw new Error(registration.error || "Registration failed.");
-      const archive = await writeArchiveReceipt({ sourcePath: positional[0], fingerprint: result.fingerprint, registration, accountEmail: options.email.trim(), noArchive: Boolean(options["no-archive"]), receiptOut: options["receipt-out"] });
+      const archive = await writeArchiveReceipt({ sourcePath: positional[0], fingerprint: result.fingerprint, registration, accountEmail: identity.email, noArchive: Boolean(options["no-archive"]), receiptOut: options["receipt-out"] });
       process.stdout.write(`${JSON.stringify({ ok: true, ...result, approval: approved, registration, archive })}\n`);
       return;
     }
-    const result = await registerFile(positional[0], {
+    const identity = options["dry-run"] ? null : await accountIdentityWithRefresh({ url: options["pipeline-api-url"] });
+    if (identity && !identity.email) throw new Error("The authenticated pipeline account has no usable email address.");
+    const result = await registerFileWithRefresh(positional[0], {
       approvalMode: options.approval,
       dryRun: Boolean(options["dry-run"]),
+      token: identity?.token,
       url: options["pipeline-api-url"],
     });
     if (options["dry-run"]) {
       process.stdout.write(`${JSON.stringify({ ok: true, ...result })}\n`);
       return;
     }
-    const registration = await waitForRegistration(result.response.registration.id, { url: options["pipeline-api-url"] });
+    const registration = await waitForRegistration(result.response.registration.id, { token: identity.token, url: options["pipeline-api-url"] });
     if (registration.status !== "completed") throw new Error(registration.error || "Registration failed.");
     const archive = await writeArchiveReceipt({
       sourcePath: positional[0],
       fingerprint: result.fingerprint,
       registration,
-      accountEmail: options.email.trim(),
+      accountEmail: identity.email,
       noArchive: Boolean(options["no-archive"]),
       receiptOut: options["receipt-out"],
     });

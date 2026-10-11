@@ -26,7 +26,7 @@ separate hand-copied version in page source. Then run:
 ```sh
 digitalownership publication publish \
   ./public/.well-known/digitalownership/terms-2026-10-01.content.json \
-  --account --email evidence@example.org \
+  --account \
   --url 'https://www.example.org/.well-known/digitalownership/terms-2026-10-01.content.json' \
   --label 'Terms of Service' \
   --publisher 'Example Organisation' \

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import test from "node:test";
 
-import { getBalance, requestApprovalFile } from "../lib/pipeline-api.js";
+import { getAccount, getBalance, requestApprovalFile } from "../lib/pipeline-api.js";
 
 async function withServer(handler, callback) {
   const server = createServer(handler);
@@ -25,6 +25,19 @@ test("balance uses the access token and returns the advisory available-credit va
   }, async (url) => {
     const result = await getBalance({ token: "do_at_test-token", url });
     assert.deepEqual(result, { availableCredits: 4 });
+  });
+});
+
+test("account identity is returned only with the access token", async () => {
+  await withServer((request, response) => {
+    assert.equal(request.method, "GET");
+    assert.equal(request.url, "/api/v1/account");
+    assert.equal(request.headers.authorization, "Bearer do_at_test-token");
+    response.setHeader("content-type", "application/json");
+    response.end(JSON.stringify({ account: { email: "owner@example.com" } }));
+  }, async (url) => {
+    const result = await getAccount({ token: "do_at_test-token", url });
+    assert.deepEqual(result, { account: { email: "owner@example.com" } });
   });
 });
 

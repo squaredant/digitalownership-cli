@@ -128,7 +128,7 @@ and [publisher workflow](web-publication-verification.md).
 | `registrationStartedAt` | Pipeline request creation time, in UTC database timestamp form. |
 | `pipelineRequestId` | DigitalOwnership pipeline registration request ID. |
 | `clientReference` | Caller-visible source reference sent with the registration; the CLI uses the file name. |
-| `accountEmail` | Private local metadata supplied through `--email`. It must be the email of the account that owns the pipeline credential. It is never returned by the pipeline API. |
+| `accountEmail` | Private local metadata returned to the CLI through the authenticated pipeline account endpoint. It is the email of the account that owns the pipeline credential. |
 | `createdAt` | ISO 8601 UTC time at which the CLI wrote this receipt. |
 
 New receipts do not write an `owner` field. Historic records can contain it:

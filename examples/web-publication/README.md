@@ -22,7 +22,7 @@ verifies one versioned canonical JSON file at a time.
 ```sh
 digitalownership publication publish \
   ./public/.well-known/digitalownership/publication-2026-10-01.content.json \
-  --account --email evidence@example.org \
+  --account \
   --url 'https://www.example.org/.well-known/digitalownership/publication-2026-10-01.content.json' \
   --label 'Published report' --publisher 'Example Organisation' \
   --approval required --wait \

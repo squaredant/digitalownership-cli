@@ -89,6 +89,7 @@ POST /api/v1/integrations                 Browser session required; returns a cr
 POST /api/v1/integrations/{id}/revoke     Browser session required.
 POST /api/v1/tokens                       Integration credential bearer token required.
 GET  /api/v1/token/status                 Five-minute access token bearer token required.
+GET  /api/v1/account                      `registrations:read` access token required; returns the credential owner's email only to that credential.
 GET  /api/v1/balance                      `registrations:read` access token required; advisory credit preflight.
 POST /api/v1/approvals                    `registrations:write` token; creates a five-minute browser approval.
 GET  /api/v1/approvals/{id}               Account or `registrations:read` token; reads approval status.
@@ -113,12 +114,11 @@ GET  /api/v1/registrations/{requestId}
 credit; each actual registration checks and reserves its credit transactionally
 when processed.
 
-The pipeline API never returns the account email. The CLI requires a local
-`--email` value when creating an account registration and writes it as
-`accountEmail` in its local `digitalownership-local-record-v1` receipt. That
-value must be the email address of the account that owns the pipeline
-credential; it is not sent to or stored by the pipeline API. Treat the local
-receipt as private metadata when the email is personal or confidential.
+`GET /api/v1/account` returns the email only to an authenticated pipeline
+credential for that account. The CLI uses it to write `accountEmail` to its
+private local `digitalownership-local-record-v1` receipt; account registration
+does not accept a caller-supplied email. Treat the local receipt as private
+metadata when the email is personal or confidential.
 
 Public verification names the on-chain address `registrant`, matching the
 registry contract. The CLI stores the same value in its private local receipt
