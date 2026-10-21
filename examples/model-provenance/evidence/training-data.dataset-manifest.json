@@ -1,0 +1,11 @@
+{
+  "schema": "digitalownership-dataset-manifest-v1",
+  "datasetId": "synthetic-training-data-v1",
+  "files": [
+    {
+      "relativePath": "artifacts/training-data.csv",
+      "sha512": "0292796063e70455625af3f0026fa81d1bf1ee9908a7312451223193dbe2bd7e6bc6c306ee6e4e612369ceb5c519903f1fbdb718b84755ed3b471396a0551ad3",
+      "bytes": 48
+    }
+  ]
+}

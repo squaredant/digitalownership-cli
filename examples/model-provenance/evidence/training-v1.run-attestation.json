@@ -1,0 +1,23 @@
+{
+  "schema": "digitalownership-model-run-attestation-v1",
+  "attestationId": "synthetic-training-v1-run-001",
+  "createdAt": "2026-10-21T15:32:09Z",
+  "lineage": {
+    "path": "evidence/training-v1.lineage.json",
+    "hashAlgorithm": "SHA-512",
+    "hashScope": "digitalownership-exact-file-v1",
+    "sha512": "25df58271a4cdfe075fa80d5bf1fc7d657e30ae158613df669b8f68a9b4f321dc1b54b6920862cdfba514ddc4f009195365c713e8e10ad4730bac7668adfb05b"
+  },
+  "model": {
+    "path": "artifacts/model-v1.json",
+    "hashAlgorithm": "SHA-512",
+    "hashScope": "digitalownership-exact-file-v1",
+    "sha512": "839766ff7254ef6a89962e627a467fbab9780e0faa9a78e6491fff21eb32d0992b7464758f520c37f59d02c85aca301b494e1d32113691d48111a22936684fea",
+    "embeddedLineageSha512": "25df58271a4cdfe075fa80d5bf1fc7d657e30ae158613df669b8f68a9b4f321dc1b54b6920862cdfba514ddc4f009195365c713e8e10ad4730bac7668adfb05b"
+  },
+  "runner": {
+    "type": "local-example",
+    "commit": "example-only-no-repository-commit"
+  },
+  "claim": "This attestation declares the listed relationship between the model and the recorded lineage."
+}

@@ -21,7 +21,8 @@
   ],
   "scripts": {
     "test": "node --test",
-    "test:vectors": "python3 test-vectors/scripts/verify-vectors.py"
+    "test:vectors": "python3 test-vectors/scripts/verify-vectors.py",
+    "example:model-provenance": "node examples/model-provenance/verify-local-example.mjs"
   },
   "engines": {
     "node": ">=20"

@@ -1,0 +1,45 @@
+{
+  "schema": "digitalownership-model-lineage-v1",
+  "lineageId": "synthetic-training-v1",
+  "declaredAt": "2026-10-21T12:00:00Z",
+  "purpose": "Synthetic local fixture for testing provenance-manifest links.",
+  "artifacts": {
+    "trainingCode": {
+      "path": "artifacts/train.py",
+      "sha512": "2c9fa8c91263d7d1e0c5267e63826a933499d76c46b4549efe2ac5addde2cc75217714a118399bade4ded5065c73a10ef0960d69910e57612e589f1239466cdb",
+      "hashAlgorithm": "SHA-512",
+      "hashScope": "digitalownership-exact-file-v1",
+      "registered": false
+    },
+    "trainingData": {
+      "path": "evidence/training-data.dataset-manifest.json",
+      "sha512": "f921ea571f1c6b58887ef00fba57b3c971f9a36ce0623db6a6880b3fbe8d8a4e2389e63ed145eb3c6f3a5a8575c068f4406cfa7c474707b37863619df2096439",
+      "hashAlgorithm": "SHA-512",
+      "hashScope": "digitalownership-exact-file-v1",
+      "registered": false
+    },
+    "configuration": {
+      "path": "artifacts/training-config.json",
+      "sha512": "50f97e9b4dac45baa6d51a76e391087f85777942647b75e6447a59f9e1fc589f36cd61d173329c33e6dbd4aec05ccb5728d49ea10897a9c58b383a3901eb14bf",
+      "hashAlgorithm": "SHA-512",
+      "hashScope": "digitalownership-exact-file-v1",
+      "registered": false
+    },
+    "environment": {
+      "path": "artifacts/requirements.lock",
+      "sha512": "5134b14a1bb7a9ce9b1262be25832790439003da0fc38b94b05ebcab439625cf49d286ab37f27c8d50d6514f94b747b42fbfda2e0f0f871bafd3fc7f7f9881a7",
+      "hashAlgorithm": "SHA-512",
+      "hashScope": "digitalownership-exact-file-v1",
+      "registered": false
+    }
+  },
+  "run": {
+    "command": "python artifacts/train.py --config artifacts/training-config.json",
+    "gitCommit": "example-only-no-repository-commit",
+    "randomSeed": 42691
+  },
+  "declaredOutput": {
+    "path": "artifacts/model-v1.json",
+    "format": "json"
+  }
+}

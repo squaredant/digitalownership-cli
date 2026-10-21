@@ -7,6 +7,7 @@ import { doctor, verifyFile } from "../lib/verification.js";
 import { getAccount, getBalance, issueAccessToken, registerFile, requestApprovalFile, waitForApproval, waitForRegistration } from "../lib/pipeline-api.js";
 import { archiveFileName, writeArchiveReceipt } from "../lib/archive.js";
 import { createPublicationManifest } from "../lib/publication-manifest.js";
+import { createDatasetManifest, createLineageTemplate, createRunAttestation, prepareLineage, readProvenanceJson, verifyRunAttestation, writeNewJson } from "../lib/provenance.js";
 
 const HELP = `DigitalOwnership CLI (pre-release)
 
@@ -20,6 +21,11 @@ Usage:
   digitalownership publication manifest --receipt <receipt.json> --archive <registered-file> --url <https-url> --label <label> --publisher <publisher> --out <manifest.json> [--email <public-account-email>] [--published-at <ISO-8601>]
   digitalownership publication publish <content.json> --account --url <https-url> --label <label> --publisher <publisher> --approval required --wait --manifest-out <manifest.json> --receipt-dir <private-directory> [--published-at <ISO-8601>]
   digitalownership publication retain --receipt <receipt.json> --file <registered-file> --out <private-copy>
+  digitalownership provenance init --kind training-run --out <template.json> [--created-at <ISO-8601>]
+  digitalownership provenance dataset-manifest <directory> --out <manifest.json> [--dataset-id <id>] [--base-dir <directory>]
+  digitalownership provenance prepare --template <template.json> --out <lineage.json> [--base-dir <directory>]
+  digitalownership provenance attest --lineage <lineage.json> --model <model> --out <attestation.json> [--metrics <report>] [--lineage-receipt <receipt.json>] [--model-receipt <receipt.json>] [--metrics-receipt <receipt.json>] [--base-dir <directory>] [--attestation-id <id>] [--created-at <ISO-8601>]
+  digitalownership provenance verify --model <model> --attestation <attestation.json> [--base-dir <directory>]
 
 Environment:
   DIGITALOWNERSHIP_VERIFICATION_URL  Public verification endpoint.
@@ -43,7 +49,7 @@ function parseOptions(args) {
       continue;
     }
     const name = value.slice(2);
-    if (!new Set(["email", "verification-url", "pipeline-api-url", "approval", "account", "dry-run", "no-archive", "receipt-out", "wait", "receipt", "archive", "file", "url", "label", "publisher", "out", "manifest-out", "receipt-dir", "published-at"]).has(name)) {
+    if (!new Set(["email", "verification-url", "pipeline-api-url", "approval", "account", "dry-run", "no-archive", "receipt-out", "wait", "receipt", "archive", "file", "url", "label", "publisher", "out", "manifest-out", "receipt-dir", "published-at", "kind", "created-at", "dataset-id", "template", "base-dir", "lineage", "model", "metrics", "attestation", "attestation-id", "lineage-registry-key", "model-registry-key", "metrics-registry-key", "lineage-receipt", "model-receipt", "metrics-receipt"]).has(name)) {
       throw new Error(`Unknown option: ${value}`);
     }
     if (new Set(["account", "dry-run", "no-archive", "wait"]).has(name)) {
@@ -204,6 +210,75 @@ async function retainPublicationFile(options) {
   return { sourcePath: path.resolve(options.file), outputPath, fingerprint };
 }
 
+function provenanceBaseDir(options) {
+  return path.resolve(options["base-dir"] || process.cwd());
+}
+
+function provenancePath(value, baseDir) {
+  return path.isAbsolute(value) ? value : path.resolve(baseDir, value);
+}
+
+async function provenanceCommand(positional, options) {
+  const [action, directory] = positional;
+  const baseDir = provenanceBaseDir(options);
+  if (action === "init") {
+    if (positional.length !== 1 || !options.kind || !options.out) {
+      throw new Error("Usage: digitalownership provenance init --kind training-run --out <template.json> [--created-at <ISO-8601>]");
+    }
+    const template = createLineageTemplate({ kind: options.kind, createdAt: options["created-at"] });
+    const outputPath = provenancePath(options.out, baseDir);
+    await writeNewJson(outputPath, template, "provenance template");
+    return { templatePath: outputPath, template };
+  }
+  if (action === "dataset-manifest") {
+    if (positional.length !== 2 || !options.out) {
+      throw new Error("Usage: digitalownership provenance dataset-manifest <directory> --out <manifest.json> [--dataset-id <id>] [--base-dir <directory>]");
+    }
+    const manifest = await createDatasetManifest(provenancePath(directory, baseDir), { datasetId: options["dataset-id"], baseDir });
+    const outputPath = provenancePath(options.out, baseDir);
+    await writeNewJson(outputPath, manifest, "dataset manifest");
+    return { manifestPath: outputPath, manifest };
+  }
+  if (action === "prepare") {
+    if (positional.length !== 1 || !options.template || !options.out) {
+      throw new Error("Usage: digitalownership provenance prepare --template <template.json> --out <lineage.json> [--base-dir <directory>]");
+    }
+    const template = await readProvenanceJson(provenancePath(options.template, baseDir), "provenance template JSON");
+    const lineage = await prepareLineage(template, { baseDir });
+    const outputPath = provenancePath(options.out, baseDir);
+    await writeNewJson(outputPath, lineage, "lineage declaration");
+    return { lineagePath: outputPath, baseDir, lineage };
+  }
+  if (action === "attest") {
+    if (positional.length !== 1 || !options.lineage || !options.model || !options.out) {
+      throw new Error("Usage: digitalownership provenance attest --lineage <lineage.json> --model <model> --out <attestation.json> [--metrics <report>] [--lineage-receipt <receipt.json>] [--model-receipt <receipt.json>] [--metrics-receipt <receipt.json>] [--base-dir <directory>]");
+    }
+    const attestation = await createRunAttestation(options.lineage, options.model, {
+      baseDir,
+      metricsPath: options.metrics,
+      attestationId: options["attestation-id"],
+      createdAt: options["created-at"],
+      lineageRegistryKey: options["lineage-registry-key"],
+      modelRegistryKey: options["model-registry-key"],
+      metricsRegistryKey: options["metrics-registry-key"],
+      lineageReceiptPath: options["lineage-receipt"],
+      modelReceiptPath: options["model-receipt"],
+      metricsReceiptPath: options["metrics-receipt"],
+    });
+    const outputPath = provenancePath(options.out, baseDir);
+    await writeNewJson(outputPath, attestation, "run attestation");
+    return { attestationPath: outputPath, baseDir, attestation };
+  }
+  if (action === "verify") {
+    if (positional.length !== 1 || !options.model || !options.attestation) {
+      throw new Error("Usage: digitalownership provenance verify --model <model> --attestation <attestation.json> [--base-dir <directory>]");
+    }
+    const attestation = await readProvenanceJson(provenancePath(options.attestation, baseDir), "run attestation JSON");
+    return { baseDir, ...(await verifyRunAttestation(attestation, options.model, { baseDir })) };
+  }
+  throw new Error("Usage: digitalownership provenance <init|dataset-manifest|prepare|attest|verify> ...");
+}
+
 async function main() {
   const [command, ...args] = process.argv.slice(2);
   if (!command || command === "help" || command === "--help" || command === "-h") {
@@ -213,6 +288,11 @@ async function main() {
 
   const { options, positional } = parseOptions(args);
   const url = options["verification-url"];
+
+  if (command === "provenance") {
+    process.stdout.write(`${JSON.stringify({ ok: true, provenance: await provenanceCommand(positional, options) })}\n`);
+    return;
+  }
 
   if (command === "publication") {
     if (positional[0] === "retain") {

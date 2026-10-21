@@ -25,6 +25,29 @@ for the separately documented web-publication verification workflow. See the
 [web publication quick start](examples/web-publication/README.md), and
 [publisher workflow](docs/web-publication-verification.md).
 
+## GitHub Actions Release Evidence (Beta)
+
+The untested beta [GitHub Actions example](examples/github-actions/README.md)
+registers a source archive when a GitHub Release is published. It is intended
+for a selected release snapshot, not every commit or log event. It creates a
+short-lived access token during the run, then retains both the source archive
+and private registration receipt as workflow artifacts.
+
+## Model Provenance
+
+The [model-provenance workflow](docs/model-provenance.md) provides local
+commands to create and check an auditable chain between declared model inputs,
+configuration, environment, output model, and evaluation evidence. This helps
+teams preserve a clear, independently checkable record around selected model
+builds and releases. Register the selected files separately using
+`digitalownership register`; provenance commands make no network requests.
+The workflow establishes verifiable declared relationships and timestamps once
+registered. A signed CI or controlled runner is needed to make a stronger
+execution claim.
+Run the self-contained [local example](examples/model-provenance/README.md)
+to inspect and test the evidence chain without an account or network
+connection.
+
 ## Install As A Terminal Program
 
 The first release is distributed through GitHub rather than the npm registry.

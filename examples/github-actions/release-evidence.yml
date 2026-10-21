@@ -1,0 +1,67 @@
+name: DigitalOwnership release evidence (Beta)
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  register-release-source:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the published release tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          fetch-depth: 0
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Create a source archive from the release tag
+        run: |
+          mkdir -p evidence
+          git archive --format=zip \
+            --output="evidence/release-source-${{ github.event.release.tag_name }}.zip" \
+            "${{ github.event.release.tag_name }}"
+          echo "ARCHIVE_PATH=evidence/release-source-${{ github.event.release.tag_name }}.zip" >> "$GITHUB_ENV"
+          echo "RECEIPT_PATH=evidence/release-source-${{ github.event.release.tag_name }}.digitalownership.json" >> "$GITHUB_ENV"
+
+      - name: Install a pinned DigitalOwnership CLI release
+        run: |
+          # Replace <immutable-cli-commit> before enabling this workflow.
+          # Do not use a moving branch such as main for evidence registration.
+          npm install --global \
+            "git+https://github.com/squaredant/digitalownership-cli.git#<immutable-cli-commit>"
+          digitalownership --help
+
+      - name: Create a short-lived pipeline token
+        env:
+          DIGITALOWNERSHIP_PIPELINE_CREDENTIAL: ${{ secrets.DIGITALOWNERSHIP_PIPELINE_CREDENTIAL }}
+        run: |
+          token="$(digitalownership token | node -e 'let input = ""; process.stdin.on("data", (chunk) => input += chunk); process.stdin.on("end", () => process.stdout.write(JSON.parse(input).accessToken));')"
+          echo "DIGITALOWNERSHIP_PIPELINE_TOKEN=$token" >> "$GITHUB_ENV"
+
+      - name: Register the release source archive
+        env:
+          DIGITALOWNERSHIP_PIPELINE_TOKEN: ${{ env.DIGITALOWNERSHIP_PIPELINE_TOKEN }}
+        run: |
+          digitalownership register "$ARCHIVE_PATH" \
+            --account \
+            --approval none \
+            --no-archive \
+            --receipt-out "$RECEIPT_PATH" \
+            > evidence/registration-result.json
+
+      - name: Retain source archive and registration receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: digitalownership-release-evidence-${{ github.event.release.tag_name }}
+          path: evidence/
+          if-no-files-found: error
+          retention-days: 90

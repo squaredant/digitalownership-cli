@@ -1,0 +1,8 @@
+{
+  "modelVersion": "v1",
+  "recordCount": 3,
+  "digitalownershipProvenance": {
+    "schema": "digitalownership-model-provenance-v1",
+    "lineageSha512": "25df58271a4cdfe075fa80d5bf1fc7d657e30ae158613df669b8f68a9b4f321dc1b54b6920862cdfba514ddc4f009195365c713e8e10ad4730bac7668adfb05b"
+  }
+}
