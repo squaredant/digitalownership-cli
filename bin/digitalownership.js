@@ -19,7 +19,7 @@ Usage:
   digitalownership balance [--pipeline-api-url <url>]
   digitalownership register <file> --account --approval none|required [--wait] [--dry-run] [--no-archive --receipt-out <path>]
   digitalownership publication manifest --receipt <receipt.json> --archive <registered-file> --url <https-url> --label <label> --publisher <publisher> --out <manifest.json> [--email <public-account-email>] [--published-at <ISO-8601>]
-  digitalownership publication publish <content.json> --account --url <https-url> --label <label> --publisher <publisher> --approval required --wait --manifest-out <manifest.json> --receipt-dir <private-directory> [--published-at <ISO-8601>]
+  digitalownership publication publish <content.json-or-md> --account --url <https-url> --label <label> --publisher <publisher> --approval required --wait --manifest-out <manifest.json> --receipt-dir <private-directory> [--published-at <ISO-8601>]
   digitalownership publication retain --receipt <receipt.json> --file <registered-file> --out <private-copy>
   digitalownership provenance init --kind training-run --out <template.json> [--created-at <ISO-8601>]
   digitalownership provenance dataset-manifest <directory> --out <manifest.json> [--dataset-id <id>] [--base-dir <directory>]
@@ -304,7 +304,7 @@ async function main() {
     }
     if (positional[0] === "publish") {
       if (positional.length !== 2 || !options.account || options.approval !== "required" || !options.wait) {
-        throw new Error("Usage: digitalownership publication publish <content.json> --account --url <https-url> --label <label> --publisher <publisher> --approval required --wait --manifest-out <manifest.json> --receipt-dir <private-directory>");
+        throw new Error("Usage: digitalownership publication publish <content.json-or-md> --account --url <https-url> --label <label> --publisher <publisher> --approval required --wait --manifest-out <manifest.json> --receipt-dir <private-directory>");
       }
       if (options.email) throw new Error("--email is not used for account registration. The authenticated pipeline account supplies the private receipt email.");
       for (const name of ["url", "label", "publisher", "manifest-out", "receipt-dir"]) {

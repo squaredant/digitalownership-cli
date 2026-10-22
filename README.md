@@ -222,7 +222,7 @@ digitalownership register ./out/final-report.json --account \
 
 ### Create A Publication Manifest
 
-For a public web publication, first register the canonical `.json` content
+For a public web publication, first register the canonical `.json` or `.md` content
 file as above. Then create its public manifest from the completed local
 receipt. This command only reads and writes local files: it does not contact
 DigitalOwnership or register anything.
