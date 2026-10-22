@@ -202,7 +202,10 @@ digitalownership register ./out/final-report.pdf --account \
 Open the URL, sign in to the same account, inspect the fingerprint, scope, and
 target, then choose **Approve registration and spend one credit**. If you did
 not include `--wait`, rerun the same command **with** `--wait` to resume its
-idempotent approval/job without creating a second registration.
+idempotent approval/job without creating a second registration. Approval URLs
+expire after five minutes. If an approval expires, rerun the registration
+command to receive a new URL; issuing a new pipeline access token alone does
+not renew the expired approval.
 
 ### Store Only The Receipt
 

@@ -56,7 +56,7 @@ test("required approval creates a browser-approval request instead of registerin
     request.on("end", () => {
       const body = JSON.parse(raw);
       assert.equal(body.approvalMode, "required");
-      assert.match(body.idempotencyKey, /^cli-required-/);
+      assert.match(body.idempotencyKey, /^cli-required-[a-f0-9]{32}-\d+$/);
       response.setHeader("content-type", "application/json");
       response.end(JSON.stringify({
         approval: {
