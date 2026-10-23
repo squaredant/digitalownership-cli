@@ -127,7 +127,7 @@ and [publisher workflow](web-publication-verification.md).
 | `transactionStatus` | `confirmed-success` after the receipt and event were checked. |
 | `registrationStartedAt` | Pipeline request creation time, in UTC database timestamp form. |
 | `pipelineRequestId` | DigitalOwnership pipeline registration request ID. |
-| `clientReference` | Caller-visible source reference sent with the registration; the CLI uses the file name. |
+| `clientReference` | Optional caller-visible source reference sent with the registration. The CLI leaves it empty by default so local file names are not sent to the service. |
 | `accountEmail` | Private local metadata returned to the CLI through the authenticated pipeline account endpoint. It is the email of the account that owns the pipeline credential. |
 | `createdAt` | ISO 8601 UTC time at which the CLI wrote this receipt. |
 
