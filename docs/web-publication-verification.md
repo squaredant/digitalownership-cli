@@ -93,6 +93,19 @@ CORS does not make a file private. It only lets the stated independent website
 read an already-public response in a browser. Do not expose private receipts;
 publish only the canonical content and manifest.
 
+### Optional local-image evidence
+
+The WordPress integration can include SHA-512 fingerprints for local upload
+images in a new fixed JSON content file. A reader may choose to check those
+images in the independent verifier. The reader's browser downloads and hashes
+the declared image URLs directly; DigitalOwnership does not receive or proxy
+image bytes. The publisher must grant the verifier origin CORS access to those
+image URLs as well as the content file and manifest.
+
+This is deliberately limited to images explicitly declared by the fixed
+content file. Remote images, CSS backgrounds, and third-party embeds such as
+video players remain outside the verified scope.
+
 ## Publisher Button
 
 Place a visible link near the canonical text. It must open the independent
